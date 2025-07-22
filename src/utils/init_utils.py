@@ -17,9 +17,6 @@ from src.utils.io_utils import ROOT_PATH
 def set_worker_seed(worker_id):
     """
     Set seed for each dataloader worker.
-
-    For more info, see https://pytorch.org/docs/stable/notes/randomness.html
-
     Args:
         worker_id (int): id of the worker.
     """
