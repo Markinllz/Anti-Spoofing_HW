@@ -11,11 +11,11 @@ class AsoftMax(nn.Module):
 
     def forward(self, logits: torch.Tensor, labels: torch.Tensor):
         """
-        A-Softmax loss calculation
+        A-Softmax loss compute
         
         Args:
             logits (Tensor): model output predictions (batch_size, num_classes)
-            labels (Tensor): ground-truth labels (batch_size,)
+            labels (Tensor): grount truth labels (batch_size, 1(we want))
         Returns:
             losses (dict): dictionary loss
         """
@@ -23,27 +23,27 @@ class AsoftMax(nn.Module):
         logits_norm = F.normalize(logits, p=2, dim=1)
         
        
-        cos_theta = torch.clamp(logits_norm, -1.0 + 1e-8, 1.0 - 1e-8)
+        prev_cos = torch.clamp(logits_norm, -1.0 + 1e-8, 1.0 - 1e-8)
         
        
-        theta = torch.acos(cos_theta)
+        angle = torch.acos(prev_cos)
         
        
-        cos_theta_m = cos_theta.clone()
+        cos_m = prev_cos.clone()
         
         
-        mask = torch.zeros_like(cos_theta)
+        mask = torch.zeros_like(prev_cos)
         mask.scatter_(1, labels.unsqueeze(1), 1)
         
        
-        cos_theta_m = torch.where(mask == 1, 
-                                 torch.cos(self.margin * theta), 
-                                 cos_theta)
+        cos_m = torch.where(mask == 1, 
+                                 torch.cos(self.margin * angle), 
+                                 prev_cos)
         
        
-        cos_theta_m = cos_theta_m * self.scale
+        cos_m = cos_m * self.scale
         
    
-        loss = F.cross_entropy(cos_theta_m, labels)
+        loss = F.cross_entropy(cos_m, labels)
         
         return {"loss": loss}
