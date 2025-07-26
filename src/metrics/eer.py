@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from abc import abstractmethod
 
 class BaseMetric:
@@ -17,8 +18,8 @@ class EERMetric(BaseMetric):
     """
     Equal Error Rate (EER) metric.
     Ожидает в batch два поля:
-        - 'scores': numpy array или torch tensor с предсказанными скорингами
-        - 'labels': numpy array или torch tensor с метками (1 — bona fide, 0 — spoof)
+        - 'logits': torch tensor с предсказанными logits
+        - 'labels': torch tensor с метками (1 — bona fide, 0 — spoof)
     """
 
     def __init__(self, name="eer"):
@@ -49,6 +50,9 @@ class EERMetric(BaseMetric):
         # bona fide = 1, spoof = 0
         bona_scores = scores[labels == 1]
         spoof_scores = scores[labels == 0]
+
+        if len(bona_scores) == 0 or len(spoof_scores) == 0:
+            return 0.0
 
         eer, _ = self.compute_eer(bona_scores, spoof_scores)
         return eer

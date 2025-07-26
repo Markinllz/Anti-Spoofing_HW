@@ -66,13 +66,29 @@ class LCNN(nn.Module):
 
         self.MaxPool28 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-
         self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc29 = nn.Linear(32, 160)
         self.dropout29 = nn.Dropout(dropout_p)
         self.mfm30 = mfm_block(160)
         self.BatchNorm31 = nn.BatchNorm1d(80)
         self.fc32 = nn.Linear(80, num_classes)
+        
+        # Инициализация весов
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        """Инициализация весов для лучшего обучения"""
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, data_object, **kwargs):
         x = data_object

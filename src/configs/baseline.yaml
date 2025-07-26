@@ -8,7 +8,7 @@ defaults:
   - datasets: asvspoof2019
   - dataloader: default
   - transforms: default
-  - writer: wandb
+  - writer: cometml
   - trainer: default
 
 data_path: ${oc.env:DATA_PATH,data}

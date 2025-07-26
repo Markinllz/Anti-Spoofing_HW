@@ -1,0 +1,106 @@
+data_path: ${oc.env:DATA_PATH,data}
+project_name: anti-spoofing
+run_name: anti-spoofing-experiment
+model:
+  _target_: src.model.model.LCNN
+  in_channels: 1
+  num_classes: 2
+  dropout_p: 0.3
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 1.0e-05
+  weight_decay: 0.0001
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  step_size: 10
+  gamma: 0.1
+loss_function:
+  _target_: src.loss.Asoftmax.AsoftMax
+  margin: 2
+  scale: 15
+metrics:
+  train:
+  - _target_: src.metrics.eer.EERMetric
+    name: eer
+  inference:
+  - _target_: src.metrics.eer.EERMetric
+    name: eer
+datasets:
+  train:
+    _target_: src.datasets.mydataset.AudioSpoofingDataset
+    name: train
+    label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt
+    audio_path: ${data_path}/ASVspoof2019_LA_train/flac
+    out_path: data/train_index.json
+    instance_transforms: ${transforms.instance_transforms}
+  val:
+    _target_: src.datasets.mydataset.AudioSpoofingDataset
+    name: val
+    label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt
+    audio_path: ${data_path}/ASVspoof2019_LA_dev/flac
+    out_path: data/val_index.json
+    instance_transforms: ${transforms.instance_transforms}
+  test:
+    _target_: src.datasets.mydataset.AudioSpoofingDataset
+    name: test
+    label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt
+    audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
+    out_path: data/test_index.json
+    instance_transforms: ${transforms.instance_transforms}
+dataloader:
+  _target_: torch.utils.data.DataLoader
+  batch_size: 16
+  num_workers: 4
+  pin_memory: true
+transforms:
+  instance_transforms:
+    data_object: ${transforms.stft}
+  stft:
+    _target_: src.transforms.stft.AudioFrontend
+  batch_transforms:
+    train:
+      data_object:
+        _target_: torch.nn.Sequential
+        _args_:
+        - _target_: src.transforms.normalize.Normalize
+          mean:
+          - 0.0
+          std:
+          - 1.0
+    inference:
+      data_object:
+        _target_: torch.nn.Sequential
+        _args_:
+        - _target_: src.transforms.normalize.Normalize
+          mean:
+          - 0.0
+          std:
+          - 1.0
+writer:
+  _target_: src.logger.cometml.CometMLWriter
+  project_name: anti-spoofing
+  workspace: null
+  run_id: xzqp1djl
+  run_name: inference-test
+  mode: online
+  loss_names:
+  - loss
+  log_checkpoints: false
+  id_length: 8
+  api_key: ${oc.env:COMET_API_KEY}
+trainer:
+  seed: 42
+  device: auto
+  n_epochs: 100
+  save_period: 10
+  val_period: 1
+  skip_oom: true
+  max_grad_norm: 1.0
+  log_step: 50
+  save_dir: checkpoints
+  device_tensors:
+  - data_object
+  - labels
+  monitor: min val_eer
+  early_stop: 20
+  override: true

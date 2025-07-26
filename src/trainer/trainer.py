@@ -47,17 +47,17 @@ class Trainer(BaseTrainer):
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-        
+        # Обновляем loss метрики
         for loss_name in self.config.writer.loss_names:
             metrics.update(loss_name, batch[loss_name].item())
 
-      
+        # Обновляем EER метрику
         if "logits" in batch:
             scores = torch.softmax(batch["logits"], dim=1)[:, 1]
             labels = batch["labels"]
             metrics.update_eer(scores, labels)
 
-       
+        # Обновляем остальные метрики
         for met in metric_funcs:
             if met.name != "eer":
                 try:

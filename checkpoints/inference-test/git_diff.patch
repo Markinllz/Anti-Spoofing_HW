@@ -1,0 +1,185 @@
+diff --git a/src/configs/baseline.yaml b/src/configs/baseline.yaml
+index 6c8ba46..1649280 100644
+--- a/src/configs/baseline.yaml
++++ b/src/configs/baseline.yaml
+@@ -8,7 +8,7 @@ defaults:
+   - datasets: asvspoof2019
+   - dataloader: default
+   - transforms: default
+-  - writer: wandb
++  - writer: cometml
+   - trainer: default
+ 
+ data_path: ${oc.env:DATA_PATH,data}
+diff --git a/src/configs/dataloader/default.yaml b/src/configs/dataloader/default.yaml
+index 86758af..902e80f 100644
+--- a/src/configs/dataloader/default.yaml
++++ b/src/configs/dataloader/default.yaml
+@@ -1,4 +1,4 @@
+ _target_: torch.utils.data.DataLoader
+-batch_size: 32
++batch_size: 16
+ num_workers: 4
+ pin_memory: true 
+\ No newline at end of file
+diff --git a/src/configs/loss_function/asoftmax.yaml b/src/configs/loss_function/asoftmax.yaml
+index fe087a7..a96439b 100644
+--- a/src/configs/loss_function/asoftmax.yaml
++++ b/src/configs/loss_function/asoftmax.yaml
+@@ -1,3 +1,3 @@
+ _target_: src.loss.Asoftmax.AsoftMax
+-margin: 4
+-scale: 30 
+\ No newline at end of file
++margin: 2
++scale: 15 
+\ No newline at end of file
+diff --git a/src/configs/optimizer/adam.yaml b/src/configs/optimizer/adam.yaml
+index 9af2fd8..3b50a71 100644
+--- a/src/configs/optimizer/adam.yaml
++++ b/src/configs/optimizer/adam.yaml
+@@ -1,3 +1,3 @@
+ _target_: torch.optim.Adam
+-lr: 0.0001
++lr: 0.00001
+ weight_decay: 0.0001 
+\ No newline at end of file
+diff --git a/src/loss/Asoftmax.py b/src/loss/Asoftmax.py
+index 25a74e3..6c4ee07 100644
+--- a/src/loss/Asoftmax.py
++++ b/src/loss/Asoftmax.py
+@@ -20,26 +20,29 @@ class AsoftMax(nn.Module):
+         Returns:
+             losses (dict): dictionary loss
+         """
+-       
++        
++        # Нормализуем logits
+         logits_norm = F.normalize(logits, p=2, dim=1)
+-        prev_cos = torch.clamp(logits_norm, -1.0 + 1e-6, 1.0 - 1e-6)
+         
+-        angle = torch.acos(prev_cos)
+-        cos_m = prev_cos.clone()
++        # Вычисляем косинус угла
++        cos_theta = torch.clamp(logits_norm, -1.0 + 1e-6, 1.0 - 1e-6)
+         
++        # Вычисляем угол
++        theta = torch.acos(cos_theta)
+         
+-        mask = torch.zeros_like(prev_cos)
++        # Создаем маску для целевого класса
++        mask = torch.zeros_like(cos_theta)
+         mask.scatter_(1, labels.unsqueeze(1), 1)
+         
+-       
+-        cos_m = torch.where(mask == 1, 
+-                                 torch.cos(self.margin * angle), 
+-                                 prev_cos)
++        # Применяем margin только к целевому классу
++        cos_theta_m = torch.where(mask == 1, 
++                                 torch.cos(self.margin * theta), 
++                                 cos_theta)
+         
+-       
+-        cos_m = cos_m * self.scale
++        # Масштабируем
++        cos_theta_m = cos_theta_m * self.scale
+         
+-   
+-        loss = F.cross_entropy(cos_m, labels)
++        # Вычисляем loss
++        loss = F.cross_entropy(cos_theta_m, labels)
+         
+         return {"loss": loss}
+\ No newline at end of file
+diff --git a/src/metrics/eer.py b/src/metrics/eer.py
+index 61d466e..7e34321 100644
+--- a/src/metrics/eer.py
++++ b/src/metrics/eer.py
+@@ -1,4 +1,5 @@
+ import numpy as np
++import torch
+ from abc import abstractmethod
+ 
+ class BaseMetric:
+@@ -17,8 +18,8 @@ class EERMetric(BaseMetric):
+     """
+     Equal Error Rate (EER) metric.
+     Ожидает в batch два поля:
+-        - 'scores': numpy array или torch tensor с предсказанными скорингами
+-        - 'labels': numpy array или torch tensor с метками (1 — bona fide, 0 — spoof)
++        - 'logits': torch tensor с предсказанными logits
++        - 'labels': torch tensor с метками (1 — bona fide, 0 — spoof)
+     """
+ 
+     def __init__(self, name="eer"):
+@@ -50,6 +51,9 @@ class EERMetric(BaseMetric):
+         bona_scores = scores[labels == 1]
+         spoof_scores = scores[labels == 0]
+ 
++        if len(bona_scores) == 0 or len(spoof_scores) == 0:
++            return 0.0
++
+         eer, _ = self.compute_eer(bona_scores, spoof_scores)
+         return eer
+ 
+diff --git a/src/model/model.py b/src/model/model.py
+index 6d0bf94..28a4ce4 100644
+--- a/src/model/model.py
++++ b/src/model/model.py
+@@ -66,13 +66,29 @@ class LCNN(nn.Module):
+ 
+         self.MaxPool28 = nn.MaxPool2d(kernel_size=2, stride=2)
+ 
+-
+         self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
+         self.fc29 = nn.Linear(32, 160)
+         self.dropout29 = nn.Dropout(dropout_p)
+         self.mfm30 = mfm_block(160)
+         self.BatchNorm31 = nn.BatchNorm1d(80)
+         self.fc32 = nn.Linear(80, num_classes)
++        
++        # Инициализация весов
++        self._initialize_weights()
++
++    def _initialize_weights(self):
++        """Инициализация весов для лучшего обучения"""
++        for m in self.modules():
++            if isinstance(m, nn.Conv2d):
++                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
++                if m.bias is not None:
++                    nn.init.constant_(m.bias, 0)
++            elif isinstance(m, nn.BatchNorm2d):
++                nn.init.constant_(m.weight, 1)
++                nn.init.constant_(m.bias, 0)
++            elif isinstance(m, nn.Linear):
++                nn.init.normal_(m.weight, 0, 0.01)
++                nn.init.constant_(m.bias, 0)
+ 
+     def forward(self, data_object, **kwargs):
+         x = data_object
+diff --git a/src/trainer/trainer.py b/src/trainer/trainer.py
+index 1b806fb..3313fea 100644
+--- a/src/trainer/trainer.py
++++ b/src/trainer/trainer.py
+@@ -47,17 +47,17 @@ class Trainer(BaseTrainer):
+             if self.lr_scheduler is not None:
+                 self.lr_scheduler.step()
+ 
+-        
++        # Обновляем loss метрики
+         for loss_name in self.config.writer.loss_names:
+             metrics.update(loss_name, batch[loss_name].item())
+ 
+-      
++        # Обновляем EER метрику
+         if "logits" in batch:
+             scores = torch.softmax(batch["logits"], dim=1)[:, 1]
+             labels = batch["labels"]
+             metrics.update_eer(scores, labels)
+ 
+-       
++        # Обновляем остальные метрики
+         for met in metric_funcs:
+             if met.name != "eer":
+                 try:

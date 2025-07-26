@@ -20,26 +20,29 @@ class AsoftMax(nn.Module):
         Returns:
             losses (dict): dictionary loss
         """
-       
+        
+        # Нормализуем logits
         logits_norm = F.normalize(logits, p=2, dim=1)
-        prev_cos = torch.clamp(logits_norm, -1.0 + 1e-6, 1.0 - 1e-6)
         
-        angle = torch.acos(prev_cos)
-        cos_m = prev_cos.clone()
+        # Вычисляем косинус угла
+        cos_theta = torch.clamp(logits_norm, -1.0 + 1e-6, 1.0 - 1e-6)
         
+        # Вычисляем угол
+        theta = torch.acos(cos_theta)
         
-        mask = torch.zeros_like(prev_cos)
+        # Создаем маску для целевого класса
+        mask = torch.zeros_like(cos_theta)
         mask.scatter_(1, labels.unsqueeze(1), 1)
         
-       
-        cos_m = torch.where(mask == 1, 
-                                 torch.cos(self.margin * angle), 
-                                 prev_cos)
+        # Применяем margin только к целевому классу
+        cos_theta_m = torch.where(mask == 1, 
+                                 torch.cos(self.margin * theta), 
+                                 cos_theta)
         
-       
-        cos_m = cos_m * self.scale
+        # Масштабируем
+        cos_theta_m = cos_theta_m * self.scale
         
-   
-        loss = F.cross_entropy(cos_m, labels)
+        # Вычисляем loss
+        loss = F.cross_entropy(cos_theta_m, labels)
         
         return {"loss": loss}
