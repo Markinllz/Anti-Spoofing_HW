@@ -26,28 +26,28 @@ class EERMetric(BaseMetric):
         super().__init__(name=name)
 
     def __call__(self, **batch):
-        # Получаем logits и метки
+    
         logits = batch["logits"]
         labels = batch["labels"]
 
-        # Приводим к numpy, если это torch.Tensor
+        
         if hasattr(logits, "detach"):
             logits = logits.detach().cpu().numpy()
         if hasattr(labels, "detach"):
             labels = labels.detach().cpu().numpy()
 
-        # Получаем скоры из logits (softmax)
+        
         import torch.nn.functional as F
         if hasattr(logits, "detach"):
-            # Если это tensor, используем softmax
-            scores = F.softmax(logits, dim=-1)[:, 1]  # Берем вероятность bona fide
+            
+            scores = F.softmax(logits, dim=-1)[:, 1]
         else:
-            # Если это numpy, конвертируем обратно в tensor
+            
             logits_tensor = torch.from_numpy(logits)
             scores_tensor = F.softmax(logits_tensor, dim=-1)
-            scores = scores_tensor[:, 1].numpy()  # Берем вероятность bona fide
+            scores = scores_tensor[:, 1].numpy()
 
-        # bona fide = 1, spoof = 0
+        
         bona_scores = scores[labels == 1]
         spoof_scores = scores[labels == 0]
 
