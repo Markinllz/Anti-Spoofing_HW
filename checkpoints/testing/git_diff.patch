@@ -1,1016 +1,1142 @@
 diff --git a/checkpoints/testing/config.yaml b/checkpoints/testing/config.yaml
-index 0ce26c1..7ceb554 100644
+index 7ceb554..7ff17ce 100644
 --- a/checkpoints/testing/config.yaml
 +++ b/checkpoints/testing/config.yaml
-@@ -31,21 +31,21 @@ datasets:
-     name: train
-     label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt
-     audio_path: ${data_path}/ASVspoof2019_LA_train/flac
--    out_path: ${data_path}/train_index.json
-+    out_path: data/train_index.json
-     instance_transforms: ${transforms.instance_transforms}
-   val:
-     _target_: src.datasets.mydataset.AudioSpoofingDataset
-     name: val
-     label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt
-     audio_path: ${data_path}/ASVspoof2019_LA_dev/flac
--    out_path: ${data_path}/val_index.json
-+    out_path: data/val_index.json
-     instance_transforms: ${transforms.instance_transforms}
-   test:
-     _target_: src.datasets.mydataset.AudioSpoofingDataset
-     name: test
-     label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt
-     audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
--    out_path: ${data_path}/test_index.json
-+    out_path: data/test_index.json
-     instance_transforms: ${transforms.instance_transforms}
- dataloader:
-   _target_: torch.utils.data.DataLoader
+@@ -8,7 +8,7 @@ model:
+   dropout_p: 0.3
+ optimizer:
+   _target_: torch.optim.Adam
+-  lr: 0.001
++  lr: 0.0001
+   weight_decay: 0.0001
+ lr_scheduler:
+   _target_: torch.optim.lr_scheduler.StepLR
 @@ -80,7 +80,7 @@ writer:
    _target_: src.logger.cometml.CometMLWriter
    project_name: pytorch_template
    workspace: null
--  run_id: 8p770h6n
-+  run_id: g4iurtd5
+-  run_id: g4iurtd5
++  run_id: wcvqlape
    run_name: testing
    mode: online
    loss_names:
 diff --git a/checkpoints/testing/git_commit.txt b/checkpoints/testing/git_commit.txt
-index c75b07e..41fa65c 100644
+index 41fa65c..753816d 100644
 --- a/checkpoints/testing/git_commit.txt
 +++ b/checkpoints/testing/git_commit.txt
 @@ -1 +1 @@
--e89891fda33ec5b9f6ed7e6ceaef6fabb839e053
-+e36ce86f3245383fa0658efdf282907099ff7204
+-e36ce86f3245383fa0658efdf282907099ff7204
++c3b6745dd69f3cb6426936df706eec52f7064947
 diff --git a/checkpoints/testing/git_diff.patch b/checkpoints/testing/git_diff.patch
-index 89a46b6..e69de29 100644
+index bdf9e3e..e69de29 100644
 --- a/checkpoints/testing/git_diff.patch
 +++ b/checkpoints/testing/git_diff.patch
-@@ -1,966 +0,0 @@
--diff --git a/README.md b/README.md
--index 9673c4c..f0955d1 100644
----- a/README.md
--+++ b/README.md
--@@ -1 +1,92 @@
---# Anti-Spoofing_HW
--+# Anti-Spoofing System
--+
--+Система для обнаружения спуфинга в аудио с использованием глубокого обучения.
--+
--+## Установка
--+
--+### Требования
--+- Python 3.9+
--+- PyTorch 2.2.0
--+- CUDA (опционально, для GPU)
--+
--+### Установка зависимостей
--+
--+1. **Клонируйте репозиторий:**
--+```bash
--+git clone <repository-url>
--+cd Anti-Spoofing_Homework
--+```
--+
--+2. **Создайте виртуальное окружение:**
--+```bash
--+conda create -n anti-spoofing python=3.9
--+conda activate anti-spoofing
--+```
--+
--+3. **Установите зависимости:**
--+```bash
--+# Основные зависимости
--+pip install -r requirements.txt
--+
--+# Для разработки (опционально)
--+pip install -r requirements-dev.txt
--+```
--+
--+## Использование
--+
--+### Обучение модели
--+
--+```bash
--+python train.py
--+```
--+
--+### Инференс
--+
--+```bash
--+# Установите API ключ CometML
--+export COMET_API_KEY="ваш_api_ключ"
--+
--+# Запустите инференс
--+python inference.py
--+
--+# Или используйте готовый скрипт
--+python test_inference.py
--+```
--+
--+## Конфигурация
--+
--+Проект использует Hydra для управления конфигурацией. Основные файлы конфигурации находятся в `src/configs/`.
--+
--+### Настройка логирования
--+
--+Для использования CometML:
--+```bash
--+export COMET_API_KEY="ваш_api_ключ"
--+python train.py
--+```
--+
--+Для использования WandB:
--+```bash
--+wandb login
--+python train.py
--+```
--+
--+## Структура проекта
--+
--+```
--+Anti-Spoofing_Homework/
--+├── src/
--+│   ├── configs/          # Конфигурации Hydra
--+│   ├── datasets/         # Датсеты и загрузчики данных
--+│   ├── logger/           # Логгеры (CometML, WandB)
--+│   ├── loss/            # Функции потерь
--+│   ├── metrics/         # Метрики
--+│   ├── model/           # Модели
--+│   ├── trainer/         # Тренировка
--+│   ├── transforms/      # Трансформации данных
--+│   └── utils/           # Утилиты
--+├── data/                # Данные
--+├── checkpoints/         # Чекпоинты моделей
--+├── outputs/             # Выходы
--+└── wandb/              # Логи WandB
--+```
--diff --git a/inference.py b/inference.py
--index e69de29..3289a3f 100644
----- a/inference.py
--+++ b/inference.py
--@@ -0,0 +1,78 @@
--+import warnings
--+
--+import hydra
--+import torch
--+from hydra.utils import instantiate
--+
--+from src.datasets.data_utils import get_dataloaders
--+from src.trainer import Inferencer
--+from src.utils.init_utils import set_random_seed
--+from src.utils.io_utils import ROOT_PATH
--+from src.logger.cometml import CometMLWriter
--+
--+warnings.filterwarnings("ignore", category=UserWarning)
--+
--+
--+@hydra.main(version_base=None, config_path="src/configs", config_name="inference")
--+def main(config):
--+    """
--+    Main script for inference. Instantiates the model, metrics, and
--+    dataloaders. Runs Inferencer to calculate metrics and (or)
--+    save predictions.
--+
--+    Args:
--+        config (DictConfig): hydra experiment config.
--+    """
--+    set_random_seed(config.inferencer.seed)
--+
--+    if config.inferencer.device == "auto":
--+        device = "cuda" if torch.cuda.is_available() else "cpu"
--+    else:
--+        device = config.inferencer.device
--+
--+    # setup data_loader instances
--+    # batch_transforms should be put on device
--+    dataloaders, batch_transforms = get_dataloaders(config, device)
--+
--+    # build model architecture, then print to console
--+    model = instantiate(config.model).to(device)
--+    print(model)
--+
--+    # get metrics
--+    metrics = instantiate(config.metrics)
--+
--+    # setup CometML writer
--+    writer = None
--+    if hasattr(config, 'writer') and config.writer is not None:
--+        writer = CometMLWriter(
--+            logger=None,
--+            project_config=config,
--+            **{k: v for k, v in config.writer.items() if k != '_target_'}
--+        )
--+
--+    # save_path for model predictions
--+    save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
--+    save_path.mkdir(exist_ok=True, parents=True)
--+
--+    inferencer = Inferencer(
--+        model=model,
--+        config=config,
--+        device=device,
--+        dataloaders=dataloaders,
--+        batch_transforms=batch_transforms,
--+        save_path=save_path,
--+        metrics=metrics,
--+        skip_model_load=False,
--+        writer=writer,
--+    )
--+
--+    logs = inferencer.run_inference()
--+
--+    for part in logs.keys():
--+        for key, value in logs[part].items():
--+            full_key = part + "_" + key
--+            print(f"    {full_key:15s}: {value}")
--+
--+
--+if __name__ == "__main__":
--+    main()
--\ No newline at end of file
--diff --git a/requirements.txt b/requirements.txt
--index 19de6bf..8aab454 100644
----- a/requirements.txt
--+++ b/requirements.txt
--@@ -1,13 +1,37 @@
--+# Основные PyTorch зависимости
-- torch==2.2.0
-- torchvision==0.17.0
---torchmetrics
--+torchaudio==2.2.0
--+torchmetrics==1.7.4
--+
--+# Научные вычисления и обработка данных
-- numpy==1.26.4
---tqdm
---matplotlib
---pandas
---wandb
---hydra-core
--+pandas==2.3.1
--+matplotlib==3.9.4
--+scipy
--+
--+# Аудио обработка
--+soundfile==0.13.1
--+librosa
--+
--+# Логирование и эксперименты
--+wandb==0.21.0
--+comet-ml==3.50.0
--+hydra-core==1.3.2
--+omegaconf==2.3.0
-- 
--+# Утилиты
--+tqdm==4.67.1
--+psutil==7.0.0
--+requests==2.32.4
--+pyyaml==6.0.2
--+
--+# Разработка и форматирование кода
-- black
-- isort
---pre-commit
--\ No newline at end of file
--+pre-commit
--+flake8
--+
--+# Дополнительные зависимости для ML
--+scikit-learn
--+seaborn
--\ No newline at end of file
--diff --git a/src/datasets/base_dataset.py b/src/datasets/base_dataset.py
--index 72b4d4d..bf51c70 100644
----- a/src/datasets/base_dataset.py
--+++ b/src/datasets/base_dataset.py
--@@ -3,6 +3,7 @@ import random
-- from typing import List
-- 
-- import torch
--+import torchaudio
-- from torch.utils.data import Dataset
-- 
-- logger = logging.getLogger(__name__)
--@@ -73,15 +74,23 @@ class BaseDataset(Dataset):
-- 
--     def load_object(self, path):
--         """
---        Load object from disk.
--+        Load audio object from disk.
-- 
--         Args:
---            path (str): path to the object.
--+            path (str): path to the audio file.
--         Returns:
---            data_object (Tensor):
---        """
---        data_object = torch.load(path)
---        return data_object
--+            data_object (Tensor): audio tensor
--+        """
--+        try:
--+            waveform, sample_rate = torchaudio.load(path)
--+            # Convert to mono if stereo
--+            if waveform.shape[0] > 1:
--+                waveform = torch.mean(waveform, dim=0, keepdim=True)
--+            return waveform
--+        except Exception as e:
--+            logger.error(f"Error loading audio file {path}: {e}")
--+            # Return zero tensor as fallback
--+            return torch.zeros(1, 16000)  # 1 second of silence at 16kHz
-- 
--     def preprocess_data(self, instance_data):
--         """
--@@ -99,9 +108,10 @@ class BaseDataset(Dataset):
--         """
--         if self.instance_transforms is not None:
--             for transform_name in self.instance_transforms.keys():
---                instance_data[transform_name] = self.instance_transforms[
---                    transform_name
---                ](instance_data[transform_name])
--+                if transform_name in instance_data:
--+                    instance_data[transform_name] = self.instance_transforms[
--+                        transform_name
--+                    ](instance_data[transform_name])
--         return instance_data
--     
--     @staticmethod
--diff --git a/src/datasets/collate.py b/src/datasets/collate.py
--index d33b6f1..4c2c81e 100644
----- a/src/datasets/collate.py
--+++ b/src/datasets/collate.py
--@@ -1,4 +1,5 @@
-- import torch
--+import torch.nn.functional as F
-- 
-- 
-- def collate_fn(dataset_items: list[dict]):
--@@ -16,10 +17,19 @@ def collate_fn(dataset_items: list[dict]):
-- 
--     result_batch = {}
-- 
---    # example of collate_fn
---    result_batch["data_object"] = torch.vstack(
---        [elem["data_object"] for elem in dataset_items]
---    )
--+    # Pad audio sequences to the same length
--+    audio_tensors = [elem["data_object"] for elem in dataset_items]
--+    max_length = max(audio.shape[-1] for audio in audio_tensors)
--+    
--+    padded_audio = []
--+    for audio in audio_tensors:
--+        if audio.shape[-1] < max_length:
--+            # Pad with zeros
--+            padding = max_length - audio.shape[-1]
--+            audio = F.pad(audio, (0, padding))
--+        padded_audio.append(audio)
--+    
--+    result_batch["data_object"] = torch.stack(padded_audio)
--     result_batch["labels"] = torch.tensor([elem["labels"] for elem in dataset_items])
-- 
--     return result_batch
--\ No newline at end of file
--diff --git a/src/datasets/mydataset.py b/src/datasets/mydataset.py
--index a3a0686..02a09c3 100644
----- a/src/datasets/mydataset.py
--+++ b/src/datasets/mydataset.py
--@@ -9,30 +9,33 @@ from pathlib import Path
-- 
-- class AudioSpoofingDataset(BaseDataset):
--     """
---    Example of a nested dataset class to show basic structure.
---    Uses random vectors as objects and random integers between
---    0 and n_classes-1 as labels.
--+    Dataset class for ASVspoof2019 audio anti-spoofing challenge.
--     """
-- 
--     def __init__(
---        self, name="train", *args, **kwargs
--+        self, name="train", label_path=None, audio_path=None, out_path=None, 
--+        instance_transforms=None, *args, **kwargs
--     ):
--         """
--         Args:
---            n_classes (int): number of classes.
---            name (str): partition name
--+            name (str): partition name (train, val, test)
--+            label_path (str): path to the protocol file
--+            audio_path (str): path to the directory with .flac files
--+            out_path (str): where to save index.json
--+            instance_transforms (dict): transforms to apply to instances
--         """
---        index_path = ROOT_PATH / "data" / "example" / name / "index.json"
---
---        # each nested dataset class must have an index field that
---        # contains list of dicts. Each dict contains information about
---        # the object, including label, path, etc.
---        if index_path.exists():
---            index = read_json(str(index_path))
--+        self.name = name
--+        self.label_path = label_path
--+        self.audio_path = audio_path
--+        self.out_path = out_path
--+        
--+        # Create index if it doesn't exist
--+        if Path(out_path).exists():
--+            index = read_json(out_path)
--         else:
---            index = self._create_index(name)
--+            index = self._create_index(label_path, audio_path, out_path)
-- 
---        super().__init__(index, *args, **kwargs)
--+        super().__init__(index, instance_transforms=instance_transforms, *args, **kwargs)
-- 
--     def _create_index(self, label_path, audio_path, out_path):
--         """
--@@ -52,7 +55,7 @@ class AudioSpoofingDataset(BaseDataset):
--                 parts = line.strip().split()
--                 file_id = parts[1]
--                 class_name = parts[-1]
---                label = 0 if class_name == "bonefide" else 1
--+                label = 0 if class_name == "bonafide" else 1  # Fixed typo
--                 path = str(Path(audio_path) / f"{file_id}.flac")
--                 index.append(
--                     {
--@@ -60,7 +63,7 @@ class AudioSpoofingDataset(BaseDataset):
--                         "label" : label
--                     }
--                 )
---        print("Seperate to path and labels complete")
--+        print("Separate to path and labels complete")
--         write_json(index, out_path)
-- 
--         print(f"Created {len(index)} entries in {out_path}")
--diff --git a/src/logger/__init__.py b/src/logger/__init__.py
--index e69de29..ffa610c 100644
----- a/src/logger/__init__.py
--+++ b/src/logger/__init__.py
--@@ -0,0 +1,2 @@
--+from src.logger.logger import setup_logging
--+from src.logger.cometml import CometMLWriter
--\ No newline at end of file
--diff --git a/src/loss/Asoftmax.py b/src/loss/Asoftmax.py
--index 0f76b9d..a3c0efc 100644
----- a/src/loss/Asoftmax.py
--+++ b/src/loss/Asoftmax.py
--@@ -9,26 +9,22 @@ class AsoftMax(nn.Module):
--         self.margin = margin
--         self.scale = scale
-- 
---    def forward(self, logits: torch.Tensor, labels: torch.Tensor):
--+    def forward(self, logits: torch.Tensor, labels: torch.Tensor, **kwargs):
--         """
--         A-Softmax loss compute
--         
--         Args:
--             logits (Tensor): model output predictions (batch_size, num_classes)
---            labels (Tensor): grount truth labels (batch_size, 1(we want))
--+            labels (Tensor): ground truth labels (batch_size,)
--+            **kwargs: дополнительные аргументы (игнорируются)
--         Returns:
--             losses (dict): dictionary loss
--         """
+@@ -1,1016 +0,0 @@
+-diff --git a/checkpoints/testing/config.yaml b/checkpoints/testing/config.yaml
+-index 0ce26c1..7ceb554 100644
+---- a/checkpoints/testing/config.yaml
+-+++ b/checkpoints/testing/config.yaml
+-@@ -31,21 +31,21 @@ datasets:
+-     name: train
+-     label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt
+-     audio_path: ${data_path}/ASVspoof2019_LA_train/flac
+--    out_path: ${data_path}/train_index.json
+-+    out_path: data/train_index.json
+-     instance_transforms: ${transforms.instance_transforms}
+-   val:
+-     _target_: src.datasets.mydataset.AudioSpoofingDataset
+-     name: val
+-     label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt
+-     audio_path: ${data_path}/ASVspoof2019_LA_dev/flac
+--    out_path: ${data_path}/val_index.json
+-+    out_path: data/val_index.json
+-     instance_transforms: ${transforms.instance_transforms}
+-   test:
+-     _target_: src.datasets.mydataset.AudioSpoofingDataset
+-     name: test
+-     label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt
+-     audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
+--    out_path: ${data_path}/test_index.json
+-+    out_path: data/test_index.json
+-     instance_transforms: ${transforms.instance_transforms}
+- dataloader:
+-   _target_: torch.utils.data.DataLoader
+-@@ -80,7 +80,7 @@ writer:
+-   _target_: src.logger.cometml.CometMLWriter
+-   project_name: pytorch_template
+-   workspace: null
+--  run_id: 8p770h6n
+-+  run_id: g4iurtd5
+-   run_name: testing
+-   mode: online
+-   loss_names:
+-diff --git a/checkpoints/testing/git_commit.txt b/checkpoints/testing/git_commit.txt
+-index c75b07e..41fa65c 100644
+---- a/checkpoints/testing/git_commit.txt
+-+++ b/checkpoints/testing/git_commit.txt
+-@@ -1 +1 @@
+--e89891fda33ec5b9f6ed7e6ceaef6fabb839e053
+-+e36ce86f3245383fa0658efdf282907099ff7204
+-diff --git a/checkpoints/testing/git_diff.patch b/checkpoints/testing/git_diff.patch
+-index 89a46b6..e69de29 100644
+---- a/checkpoints/testing/git_diff.patch
+-+++ b/checkpoints/testing/git_diff.patch
+-@@ -1,966 +0,0 @@
+--diff --git a/README.md b/README.md
+--index 9673c4c..f0955d1 100644
+----- a/README.md
+--+++ b/README.md
+--@@ -1 +1,92 @@
+---# Anti-Spoofing_HW
+--+# Anti-Spoofing System
+--+
+--+Система для обнаружения спуфинга в аудио с использованием глубокого обучения.
+--+
+--+## Установка
+--+
+--+### Требования
+--+- Python 3.9+
+--+- PyTorch 2.2.0
+--+- CUDA (опционально, для GPU)
+--+
+--+### Установка зависимостей
+--+
+--+1. **Клонируйте репозиторий:**
+--+```bash
+--+git clone <repository-url>
+--+cd Anti-Spoofing_Homework
+--+```
+--+
+--+2. **Создайте виртуальное окружение:**
+--+```bash
+--+conda create -n anti-spoofing python=3.9
+--+conda activate anti-spoofing
+--+```
+--+
+--+3. **Установите зависимости:**
+--+```bash
+--+# Основные зависимости
+--+pip install -r requirements.txt
+--+
+--+# Для разработки (опционально)
+--+pip install -r requirements-dev.txt
+--+```
+--+
+--+## Использование
+--+
+--+### Обучение модели
+--+
+--+```bash
+--+python train.py
+--+```
+--+
+--+### Инференс
+--+
+--+```bash
+--+# Установите API ключ CometML
+--+export COMET_API_KEY="ваш_api_ключ"
+--+
+--+# Запустите инференс
+--+python inference.py
+--+
+--+# Или используйте готовый скрипт
+--+python test_inference.py
+--+```
+--+
+--+## Конфигурация
+--+
+--+Проект использует Hydra для управления конфигурацией. Основные файлы конфигурации находятся в `src/configs/`.
+--+
+--+### Настройка логирования
+--+
+--+Для использования CometML:
+--+```bash
+--+export COMET_API_KEY="ваш_api_ключ"
+--+python train.py
+--+```
+--+
+--+Для использования WandB:
+--+```bash
+--+wandb login
+--+python train.py
+--+```
+--+
+--+## Структура проекта
+--+
+--+```
+--+Anti-Spoofing_Homework/
+--+├── src/
+--+│   ├── configs/          # Конфигурации Hydra
+--+│   ├── datasets/         # Датсеты и загрузчики данных
+--+│   ├── logger/           # Логгеры (CometML, WandB)
+--+│   ├── loss/            # Функции потерь
+--+│   ├── metrics/         # Метрики
+--+│   ├── model/           # Модели
+--+│   ├── trainer/         # Тренировка
+--+│   ├── transforms/      # Трансформации данных
+--+│   └── utils/           # Утилиты
+--+├── data/                # Данные
+--+├── checkpoints/         # Чекпоинты моделей
+--+├── outputs/             # Выходы
+--+└── wandb/              # Логи WandB
+--+```
+--diff --git a/inference.py b/inference.py
+--index e69de29..3289a3f 100644
+----- a/inference.py
+--+++ b/inference.py
+--@@ -0,0 +1,78 @@
+--+import warnings
+--+
+--+import hydra
+--+import torch
+--+from hydra.utils import instantiate
+--+
+--+from src.datasets.data_utils import get_dataloaders
+--+from src.trainer import Inferencer
+--+from src.utils.init_utils import set_random_seed
+--+from src.utils.io_utils import ROOT_PATH
+--+from src.logger.cometml import CometMLWriter
+--+
+--+warnings.filterwarnings("ignore", category=UserWarning)
+--+
+--+
+--+@hydra.main(version_base=None, config_path="src/configs", config_name="inference")
+--+def main(config):
+--+    """
+--+    Main script for inference. Instantiates the model, metrics, and
+--+    dataloaders. Runs Inferencer to calculate metrics and (or)
+--+    save predictions.
+--+
+--+    Args:
+--+        config (DictConfig): hydra experiment config.
+--+    """
+--+    set_random_seed(config.inferencer.seed)
+--+
+--+    if config.inferencer.device == "auto":
+--+        device = "cuda" if torch.cuda.is_available() else "cpu"
+--+    else:
+--+        device = config.inferencer.device
+--+
+--+    # setup data_loader instances
+--+    # batch_transforms should be put on device
+--+    dataloaders, batch_transforms = get_dataloaders(config, device)
+--+
+--+    # build model architecture, then print to console
+--+    model = instantiate(config.model).to(device)
+--+    print(model)
+--+
+--+    # get metrics
+--+    metrics = instantiate(config.metrics)
+--+
+--+    # setup CometML writer
+--+    writer = None
+--+    if hasattr(config, 'writer') and config.writer is not None:
+--+        writer = CometMLWriter(
+--+            logger=None,
+--+            project_config=config,
+--+            **{k: v for k, v in config.writer.items() if k != '_target_'}
+--+        )
+--+
+--+    # save_path for model predictions
+--+    save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
+--+    save_path.mkdir(exist_ok=True, parents=True)
+--+
+--+    inferencer = Inferencer(
+--+        model=model,
+--+        config=config,
+--+        device=device,
+--+        dataloaders=dataloaders,
+--+        batch_transforms=batch_transforms,
+--+        save_path=save_path,
+--+        metrics=metrics,
+--+        skip_model_load=False,
+--+        writer=writer,
+--+    )
+--+
+--+    logs = inferencer.run_inference()
+--+
+--+    for part in logs.keys():
+--+        for key, value in logs[part].items():
+--+            full_key = part + "_" + key
+--+            print(f"    {full_key:15s}: {value}")
+--+
+--+
+--+if __name__ == "__main__":
+--+    main()
+--\ No newline at end of file
+--diff --git a/requirements.txt b/requirements.txt
+--index 19de6bf..8aab454 100644
+----- a/requirements.txt
+--+++ b/requirements.txt
+--@@ -1,13 +1,37 @@
+--+# Основные PyTorch зависимости
+-- torch==2.2.0
+-- torchvision==0.17.0
+---torchmetrics
+--+torchaudio==2.2.0
+--+torchmetrics==1.7.4
+--+
+--+# Научные вычисления и обработка данных
+-- numpy==1.26.4
+---tqdm
+---matplotlib
+---pandas
+---wandb
+---hydra-core
+--+pandas==2.3.1
+--+matplotlib==3.9.4
+--+scipy
+--+
+--+# Аудио обработка
+--+soundfile==0.13.1
+--+librosa
+--+
+--+# Логирование и эксперименты
+--+wandb==0.21.0
+--+comet-ml==3.50.0
+--+hydra-core==1.3.2
+--+omegaconf==2.3.0
+-- 
+--+# Утилиты
+--+tqdm==4.67.1
+--+psutil==7.0.0
+--+requests==2.32.4
+--+pyyaml==6.0.2
+--+
+--+# Разработка и форматирование кода
+-- black
+-- isort
+---pre-commit
+--\ No newline at end of file
+--+pre-commit
+--+flake8
+--+
+--+# Дополнительные зависимости для ML
+--+scikit-learn
+--+seaborn
+--\ No newline at end of file
+--diff --git a/src/datasets/base_dataset.py b/src/datasets/base_dataset.py
+--index 72b4d4d..bf51c70 100644
+----- a/src/datasets/base_dataset.py
+--+++ b/src/datasets/base_dataset.py
+--@@ -3,6 +3,7 @@ import random
+-- from typing import List
+-- 
+-- import torch
+--+import torchaudio
+-- from torch.utils.data import Dataset
+-- 
+-- logger = logging.getLogger(__name__)
+--@@ -73,15 +74,23 @@ class BaseDataset(Dataset):
+-- 
+--     def load_object(self, path):
+--         """
+---        Load object from disk.
+--+        Load audio object from disk.
+-- 
+--         Args:
+---            path (str): path to the object.
+--+            path (str): path to the audio file.
+--         Returns:
+---            data_object (Tensor):
+---        """
+---        data_object = torch.load(path)
+---        return data_object
+--+            data_object (Tensor): audio tensor
+--+        """
+--+        try:
+--+            waveform, sample_rate = torchaudio.load(path)
+--+            # Convert to mono if stereo
+--+            if waveform.shape[0] > 1:
+--+                waveform = torch.mean(waveform, dim=0, keepdim=True)
+--+            return waveform
+--+        except Exception as e:
+--+            logger.error(f"Error loading audio file {path}: {e}")
+--+            # Return zero tensor as fallback
+--+            return torch.zeros(1, 16000)  # 1 second of silence at 16kHz
+-- 
+--     def preprocess_data(self, instance_data):
+--         """
+--@@ -99,9 +108,10 @@ class BaseDataset(Dataset):
+--         """
+--         if self.instance_transforms is not None:
+--             for transform_name in self.instance_transforms.keys():
+---                instance_data[transform_name] = self.instance_transforms[
+---                    transform_name
+---                ](instance_data[transform_name])
+--+                if transform_name in instance_data:
+--+                    instance_data[transform_name] = self.instance_transforms[
+--+                        transform_name
+--+                    ](instance_data[transform_name])
+--         return instance_data
+--     
+--     @staticmethod
+--diff --git a/src/datasets/collate.py b/src/datasets/collate.py
+--index d33b6f1..4c2c81e 100644
+----- a/src/datasets/collate.py
+--+++ b/src/datasets/collate.py
+--@@ -1,4 +1,5 @@
+-- import torch
+--+import torch.nn.functional as F
+-- 
+-- 
+-- def collate_fn(dataset_items: list[dict]):
+--@@ -16,10 +17,19 @@ def collate_fn(dataset_items: list[dict]):
+-- 
+--     result_batch = {}
+-- 
+---    # example of collate_fn
+---    result_batch["data_object"] = torch.vstack(
+---        [elem["data_object"] for elem in dataset_items]
+---    )
+--+    # Pad audio sequences to the same length
+--+    audio_tensors = [elem["data_object"] for elem in dataset_items]
+--+    max_length = max(audio.shape[-1] for audio in audio_tensors)
+--+    
+--+    padded_audio = []
+--+    for audio in audio_tensors:
+--+        if audio.shape[-1] < max_length:
+--+            # Pad with zeros
+--+            padding = max_length - audio.shape[-1]
+--+            audio = F.pad(audio, (0, padding))
+--+        padded_audio.append(audio)
+--+    
+--+    result_batch["data_object"] = torch.stack(padded_audio)
+--     result_batch["labels"] = torch.tensor([elem["labels"] for elem in dataset_items])
+-- 
+--     return result_batch
+--\ No newline at end of file
+--diff --git a/src/datasets/mydataset.py b/src/datasets/mydataset.py
+--index a3a0686..02a09c3 100644
+----- a/src/datasets/mydataset.py
+--+++ b/src/datasets/mydataset.py
+--@@ -9,30 +9,33 @@ from pathlib import Path
+-- 
+-- class AudioSpoofingDataset(BaseDataset):
+--     """
+---    Example of a nested dataset class to show basic structure.
+---    Uses random vectors as objects and random integers between
+---    0 and n_classes-1 as labels.
+--+    Dataset class for ASVspoof2019 audio anti-spoofing challenge.
+--     """
+-- 
+--     def __init__(
+---        self, name="train", *args, **kwargs
+--+        self, name="train", label_path=None, audio_path=None, out_path=None, 
+--+        instance_transforms=None, *args, **kwargs
+--     ):
+--         """
+--         Args:
+---            n_classes (int): number of classes.
+---            name (str): partition name
+--+            name (str): partition name (train, val, test)
+--+            label_path (str): path to the protocol file
+--+            audio_path (str): path to the directory with .flac files
+--+            out_path (str): where to save index.json
+--+            instance_transforms (dict): transforms to apply to instances
+--         """
+---        index_path = ROOT_PATH / "data" / "example" / name / "index.json"
+---
+---        # each nested dataset class must have an index field that
+---        # contains list of dicts. Each dict contains information about
+---        # the object, including label, path, etc.
+---        if index_path.exists():
+---            index = read_json(str(index_path))
+--+        self.name = name
+--+        self.label_path = label_path
+--+        self.audio_path = audio_path
+--+        self.out_path = out_path
+--+        
+--+        # Create index if it doesn't exist
+--+        if Path(out_path).exists():
+--+            index = read_json(out_path)
+--         else:
+---            index = self._create_index(name)
+--+            index = self._create_index(label_path, audio_path, out_path)
+-- 
+---        super().__init__(index, *args, **kwargs)
+--+        super().__init__(index, instance_transforms=instance_transforms, *args, **kwargs)
+-- 
+--     def _create_index(self, label_path, audio_path, out_path):
+--         """
+--@@ -52,7 +55,7 @@ class AudioSpoofingDataset(BaseDataset):
+--                 parts = line.strip().split()
+--                 file_id = parts[1]
+--                 class_name = parts[-1]
+---                label = 0 if class_name == "bonefide" else 1
+--+                label = 0 if class_name == "bonafide" else 1  # Fixed typo
+--                 path = str(Path(audio_path) / f"{file_id}.flac")
+--                 index.append(
+--                     {
+--@@ -60,7 +63,7 @@ class AudioSpoofingDataset(BaseDataset):
+--                         "label" : label
+--                     }
+--                 )
+---        print("Seperate to path and labels complete")
+--+        print("Separate to path and labels complete")
+--         write_json(index, out_path)
+-- 
+--         print(f"Created {len(index)} entries in {out_path}")
+--diff --git a/src/logger/__init__.py b/src/logger/__init__.py
+--index e69de29..ffa610c 100644
+----- a/src/logger/__init__.py
+--+++ b/src/logger/__init__.py
+--@@ -0,0 +1,2 @@
+--+from src.logger.logger import setup_logging
+--+from src.logger.cometml import CometMLWriter
+--\ No newline at end of file
+--diff --git a/src/loss/Asoftmax.py b/src/loss/Asoftmax.py
+--index 0f76b9d..a3c0efc 100644
+----- a/src/loss/Asoftmax.py
+--+++ b/src/loss/Asoftmax.py
+--@@ -9,26 +9,22 @@ class AsoftMax(nn.Module):
+--         self.margin = margin
+--         self.scale = scale
+-- 
+---    def forward(self, logits: torch.Tensor, labels: torch.Tensor):
+--+    def forward(self, logits: torch.Tensor, labels: torch.Tensor, **kwargs):
+--         """
+--         A-Softmax loss compute
+--         
+--         Args:
+--             logits (Tensor): model output predictions (batch_size, num_classes)
+---            labels (Tensor): grount truth labels (batch_size, 1(we want))
+--+            labels (Tensor): ground truth labels (batch_size,)
+--+            **kwargs: дополнительные аргументы (игнорируются)
+--         Returns:
+--             losses (dict): dictionary loss
+--         """
+--        
+--         logits_norm = F.normalize(logits, p=2, dim=1)
+---        
+---       
+--         prev_cos = torch.clamp(logits_norm, -1.0 + 1e-8, 1.0 - 1e-8)
+--         
+---       
+--         angle = torch.acos(prev_cos)
+---        
+---       
+--         cos_m = prev_cos.clone()
+--         
+--         
+--diff --git a/src/loss/__init__.py b/src/loss/__init__.py
+--index e69de29..058704e 100644
+----- a/src/loss/__init__.py
+--+++ b/src/loss/__init__.py
+--@@ -0,0 +1 @@
+--+from src.loss.Asoftmax import AsoftMax
+--\ No newline at end of file
+--diff --git a/src/metrics/__init__.py b/src/metrics/__init__.py
+--index e69de29..8253af9 100644
+----- a/src/metrics/__init__.py
+--+++ b/src/metrics/__init__.py
+--@@ -0,0 +1,3 @@
+--+from src.metrics.base_metric import BaseMetric
+--+from src.metrics.eer import EERMetric
+--+from src.metrics.tracker import MetricTracker
+--\ No newline at end of file
+--diff --git a/src/metrics/eer.py b/src/metrics/eer.py
+--index e69de29..61d466e 100644
+----- a/src/metrics/eer.py
+--+++ b/src/metrics/eer.py
+--@@ -0,0 +1,84 @@
+--+import numpy as np
+--+from abc import abstractmethod
+--+
+--+class BaseMetric:
+--+    """
+--+    Base class for all metrics
+--+    """
+--+
+--+    def __init__(self, name=None, *args, **kwargs):
+--+        self.name = name if name is not None else type(self).__name__
+--+
+--+    @abstractmethod
+--+    def __call__(self, **batch):
+--+        raise NotImplementedError()
+--+
+--+class EERMetric(BaseMetric):
+--+    """
+--+    Equal Error Rate (EER) metric.
+--+    Ожидает в batch два поля:
+--+        - 'scores': numpy array или torch tensor с предсказанными скорингами
+--+        - 'labels': numpy array или torch tensor с метками (1 — bona fide, 0 — spoof)
+--+    """
+--+
+--+    def __init__(self, name="eer"):
+--+        super().__init__(name=name)
+--+
+--+    def __call__(self, **batch):
+--+        # Получаем logits и метки
+--+        logits = batch["logits"]
+--+        labels = batch["labels"]
+--+
+--+        # Приводим к numpy, если это torch.Tensor
+--+        if hasattr(logits, "detach"):
+--+            logits = logits.detach().cpu().numpy()
+--+        if hasattr(labels, "detach"):
+--+            labels = labels.detach().cpu().numpy()
+--+
+--+        # Получаем скоры из logits (softmax)
+--+        import torch.nn.functional as F
+--+        if hasattr(logits, "detach"):
+--+            # Если это tensor, используем softmax
+--+            scores = F.softmax(logits, dim=-1)[:, 1]  # Берем вероятность bona fide
+--+        else:
+--+            # Если это numpy, конвертируем обратно в tensor
+--+            logits_tensor = torch.from_numpy(logits)
+--+            scores_tensor = F.softmax(logits_tensor, dim=-1)
+--+            scores = scores_tensor[:, 1].numpy()  # Берем вероятность bona fide
+--+
+--+        # bona fide = 1, spoof = 0
+--+        bona_scores = scores[labels == 1]
+--+        spoof_scores = scores[labels == 0]
+--+
+--+        eer, _ = self.compute_eer(bona_scores, spoof_scores)
+--+        return eer
+--+
+--+    @staticmethod
+--+    def compute_det_curve(target_scores, nontarget_scores):
+--+        n_scores = target_scores.size + nontarget_scores.size
+--+        all_scores = np.concatenate((target_scores, nontarget_scores))
+--+        labels = np.concatenate(
+--+            (np.ones(target_scores.size), np.zeros(nontarget_scores.size)))
+--+
+--+        indices = np.argsort(all_scores, kind='mergesort')
+--+        labels = labels[indices]
+--+
+--+        tar_trial_sums = np.cumsum(labels)
+--+        nontarget_trial_sums = nontarget_scores.size - \
+--+            (np.arange(1, n_scores + 1) - tar_trial_sums)
+--+
+--+        frr = np.concatenate(
+--+            (np.atleast_1d(0), tar_trial_sums / target_scores.size))
+--+        far = np.concatenate((np.atleast_1d(1), nontarget_trial_sums /
+--+                              nontarget_scores.size))
+--+        thresholds = np.concatenate(
+--+            (np.atleast_1d(all_scores[indices[0]] - 0.001), all_scores[indices]))
+--+        return frr, far, thresholds
+--+
+--+    @classmethod
+--+    def compute_eer(cls, bona_scores, spoof_scores):
+--+        frr, far, thresholds = cls.compute_det_curve(bona_scores, spoof_scores)
+--+        abs_diffs = np.abs(frr - far)
+--+        min_index = np.argmin(abs_diffs)
+--+        eer = np.mean((frr[min_index], far[min_index]))
+--+        return eer, thresholds[min_index]
+--\ No newline at end of file
+--diff --git a/src/metrics/tracker.py b/src/metrics/tracker.py
+--index 88dcc42..e547a8d 100644
+----- a/src/metrics/tracker.py
+--+++ b/src/metrics/tracker.py
+--@@ -1,4 +1,6 @@
+-- import pandas as pd
+--+import numpy as np
+--+from collections import defaultdict
+-- 
+-- 
+-- class MetricTracker:
+--@@ -18,6 +20,10 @@ class MetricTracker:
+--         self.writer = writer
+--         self._data = pd.DataFrame(index=keys, columns=["total", "counts", "average"])
+--         self.reset()
+--+        
+--+        # Добавляем хранилище для EER метрики
+--+        self._eer_scores = []
+--+        self._eer_labels = []
+-- 
+--     def reset(self):
+--         """
+--@@ -25,6 +31,9 @@ class MetricTracker:
+--         """
+--         for col in self._data.columns:
+--             self._data[col].values[:] = 0
+--+        # Сбрасываем EER данные
+--+        self._eer_scores = []
+--+        self._eer_labels = []
+-- 
+--     def update(self, key, value, n=1):
+--         """
+--@@ -41,6 +50,30 @@ class MetricTracker:
+--         self._data.loc[key, "counts"] += n
+--         self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
+-- 
+--+    def update_eer(self, scores, labels):
+--+        """
+--+        Обновляет данные для вычисления EER метрики.
+--+        
+--+        Args:
+--+            scores (torch.Tensor): предсказанные скоры
+--+            labels (torch.Tensor): истинные метки
+--+        """
+--+        self._eer_scores.extend(scores.detach().cpu().numpy())
+--+        self._eer_labels.extend(labels.detach().cpu().numpy())
+--+
+--+    def compute_eer(self):
+--+        """
+--+        Вычисляет EER на основе накопленных данных.
+--+        """
+--+        if not self._eer_scores:
+--+            return 0.0
+--+        
+--+        from src.metrics.eer import EERMetric
+--+        eer_metric = EERMetric()
+--+        eer_value = eer_metric(scores=np.array(self._eer_scores), 
+--+                              labels=np.array(self._eer_labels))
+--+        return eer_value
+--+
+--     def avg(self, key):
+--         """
+--         Return average value for a given metric.
+--@@ -50,6 +83,8 @@ class MetricTracker:
+--         Returns:
+--             average_value (float): average value for the metric.
+--         """
+--+        if key == "eer":
+--+            return self.compute_eer()
+--         return self._data.average[key]
+-- 
+--     def result(self):
+--@@ -60,7 +95,11 @@ class MetricTracker:
+--             average_metrics (dict): dict, containing average metrics
+--                 for each metric name.
+--         """
+---        return dict(self._data.average)
+--+        result = dict(self._data.average)
+--+        # Добавляем EER если есть данные
+--+        if self._eer_scores:
+--+            result['eer'] = self.compute_eer()
+--+        return result
+-- 
+--     def keys(self):
+--         """
+--@@ -69,4 +108,7 @@ class MetricTracker:
+--         Returns:
+--             metric_keys (Index): all metric names in the table.
+--         """
+---        return self._data.total.keys()
+--\ No newline at end of file
+--+        keys = list(self._data.total.keys())
+--+        if self._eer_scores:
+--+            keys.append('eer')
+--+        return keys
+--\ No newline at end of file
+--diff --git a/src/model/__init__.py b/src/model/__init__.py
+--index e69de29..d5cd956 100644
+----- a/src/model/__init__.py
+--+++ b/src/model/__init__.py
+--@@ -0,0 +1 @@
+--+from src.model.model import LCNN
+--\ No newline at end of file
+--diff --git a/src/model/model.py b/src/model/model.py
+--index 30fbc0f..6d0bf94 100644
+----- a/src/model/model.py
+--+++ b/src/model/model.py
+--@@ -74,7 +74,8 @@ class LCNN(nn.Module):
+--         self.BatchNorm31 = nn.BatchNorm1d(80)
+--         self.fc32 = nn.Linear(80, num_classes)
+-- 
+---    def forward(self, x):
+--+    def forward(self, data_object, **kwargs):
+--+        x = data_object
+--         x = self.conv1(x)
+--         x = self.mfm2(x)
+--         x = self.dropout2(x)
+--@@ -132,6 +133,5 @@ class LCNN(nn.Module):
+--         x = self.mfm30(x)
+--         x = x.squeeze(-1).squeeze(-1)
+--         x = self.BatchNorm31(x)
+---        x = self.fc32(x)
+---        return x
+---
+--+        logits = self.fc32(x)
+--+        return {"logits": logits}
+--\ No newline at end of file
+--diff --git a/src/trainer/__init__.py b/src/trainer/__init__.py
+--index e69de29..d6c86a0 100644
+----- a/src/trainer/__init__.py
+--+++ b/src/trainer/__init__.py
+--@@ -0,0 +1,3 @@
+--+from src.trainer.trainer import Trainer
+--+from src.trainer.base_trainer import BaseTrainer
+--+from src.trainer.inferencer import Inferencer
+--\ No newline at end of file
+--diff --git a/src/trainer/inferencer.py b/src/trainer/inferencer.py
+--index 92ff156..06185a3 100644
+----- a/src/trainer/inferencer.py
+--+++ b/src/trainer/inferencer.py
+--@@ -24,6 +24,7 @@ class Inferencer(BaseTrainer):
+--         metrics=None,
+--         batch_transforms=None,
+--         skip_model_load=False,
+--+        writer=None,
+--     ):
+--         """
+--         Initialize the Inferencer.
+--@@ -68,10 +69,11 @@ class Inferencer(BaseTrainer):
+-- 
+--         # define metrics
+--         self.metrics = metrics
+--+        self.writer = writer
+--         if self.metrics is not None:
+--             self.evaluation_metrics = MetricTracker(
+--                 *[m.name for m in self.metrics["inference"]],
+---                writer=None,
+--+                writer=writer,
+--             )
+--         else:
+--             self.evaluation_metrics = None
+--@@ -185,4 +187,12 @@ class Inferencer(BaseTrainer):
+--                     metrics=self.evaluation_metrics,
+--                 )
+-- 
+---        return self.evaluation_metrics.result()
+--\ No newline at end of file
+--+        results = self.evaluation_metrics.result()
+--+        
+--+        # Логируем финальные метрики в CometML
+--+        if self.writer is not None:
+--+            for metric_name, metric_value in results.items():
+--+                self.writer.add_scalar(f"inference_{part}_{metric_name}", metric_value, 0)
+--+                print(f"    {part}_{metric_name}: {metric_value}")
+--+        
+--+        return results
+--\ No newline at end of file
+--diff --git a/src/trainer/trainer.py b/src/trainer/trainer.py
+--index a866726..9d4d9a0 100644
+----- a/src/trainer/trainer.py
+--+++ b/src/trainer/trainer.py
+--@@ -1,6 +1,6 @@
+-- from src.metrics.tracker import MetricTracker
+-- from src.trainer.base_trainer import BaseTrainer
+---
+--+import torch
+-- 
+-- class Trainer(BaseTrainer):
+--     """
+--@@ -41,39 +41,31 @@ class Trainer(BaseTrainer):
+--         batch.update(all_losses)
+-- 
+--         if self.is_train:
+---            batch["loss"].backward()  # sum of all losses is always called loss
+--+            batch["loss"].backward()
+--             self._clip_grad_norm()
+--             self.optimizer.step()
+--             if self.lr_scheduler is not None:
+--                 self.lr_scheduler.step()
+-- 
+---        # update metrics for each loss (in case of multiple losses)
+--+       
+--         for loss_name in self.config.writer.loss_names:
+--             metrics.update(loss_name, batch[loss_name].item())
+-- 
+--+       
+--+        if "logits" in batch and not self.is_train:
+--+            scores = torch.softmax(batch["logits"], dim=1)[:, 1]
+--+            labels = batch["labels"]
+--+            metrics.update_eer(scores, labels)
+--+
+--+        
+--         for met in metric_funcs:
+---            metrics.update(met.name, met(**batch))
+--+            if met.name != "eer":
+--+                metrics.update(met.name, met(**batch))
+--         return batch
+-- 
+--     def _log_batch(self, batch_idx, batch, mode="train"):
+--         """
+--         Log data from batch. Calls self.writer.add_* to log data
+--         to the experiment tracker.
+---
+---        Args:
+---            batch_idx (int): index of the current batch.
+---            batch (dict): dict-based batch after going through
+---                the 'process_batch' function.
+---            mode (str): train or inference. Defines which logging
+---                rules to apply.
+--         """
+---        # method to log data from you batch
+---        # such as audio, text or images, for example
+---
+---        # logging scheme might be different for different partitions
+---        if mode == "train":  # the method is called only every self.log_step steps
+---            # Log Stuff
+---            pass
+---        else:
+---            # Log Stuff
+---            pass
+--\ No newline at end of file
+--+        pass
+--\ No newline at end of file
+--diff --git a/src/transforms/__init__.py b/src/transforms/__init__.py
+--index e69de29..bea0123 100644
+----- a/src/transforms/__init__.py
+--+++ b/src/transforms/__init__.py
+--@@ -0,0 +1,3 @@
+--+from src.transforms.normalize import Normalize
+--+from src.transforms.scale import RandomScale1D
+--+from src.transforms.stft import AudioFrontend
+--\ No newline at end of file
+--diff --git a/src/transforms/normalize.py b/src/transforms/normalize.py
+--index 035b045..38aa0d3 100644
+----- a/src/transforms/normalize.py
+--+++ b/src/transforms/normalize.py
+--@@ -1,30 +1,28 @@
+-- import torch
+---from torch import nn
+---
+---class Normalize1D(nn.Module):
+--+import torch.nn as nn
+--     
+--+class Normalize(nn.Module):
+--     """
+---    Batch-version of Normalize for 1D Input.
+---    Used as an example of a batch transform.
+--+    Нормализация тензоров по каналам.
+--     """
+-- 
+--     def __init__(self, mean, std):
+---        """
+---        Args:
+---            mean (float): mean used in the normalization.
+---            std (float): std used in the normalization.
+---        """
+--         super().__init__()
+---
+---        self.mean = mean
+---        self.std = std
+--+        self.mean = torch.tensor(mean).view(1, -1, 1, 1)
+--+        self.std = torch.tensor(std).view(1, -1, 1, 1)
+-- 
+--     def forward(self, x):
+--         """
+--+        Применяет нормализацию.
+--+        
+--         Args:
+---            x (Tensor): input tensor.
+--+            x (torch.Tensor): входной тензор [batch_size, channels, height, width]
+--+            
+--         Returns:
+---            x (Tensor): normalized tensor.
+--+            torch.Tensor: нормализованный тензор
+--         """
+---        x = (x - self.mean) / self.std
+---        return x
+--\ No newline at end of file
+--+        device = x.device
+--+        mean = self.mean.to(device)
+--+        std = self.std.to(device)
+--+        
+--+        return (x - mean) / std
+--\ No newline at end of file
+--diff --git a/src/transforms/stft.py b/src/transforms/stft.py
+--index 1fcbc9c..954ff81 100644
+----- a/src/transforms/stft.py
+--+++ b/src/transforms/stft.py
+--@@ -1,9 +1,9 @@
+-- import torch
+--+import torch.nn as nn
+-- 
+---import torch
+-- 
+-- def audio_frontend(waveform):
+---    
+--+
+--     n_fft = 1024
+--     hop_length = 256
+--     win_length = 1024
+--@@ -22,4 +22,16 @@ def audio_frontend(waveform):
+--     magnitude = torch.abs(stft)
+--     log_magnitude = torch.log(magnitude + 1e-8)
+--     log_magnitude = log_magnitude.unsqueeze(0)
+---    return log_magnitude
+--\ No newline at end of file
+--+    return log_magnitude
+--+
+--+
+--+class AudioFrontend(nn.Module):
+--+    
+--+    def __init__(self):
+--+        super().__init__()
+--+    
+--+    def forward(self, waveform):
+--+      
+--+
+--+
+--+        return audio_frontend(waveform)
+--\ No newline at end of file
+--diff --git a/train.py b/train.py
+--index e69de29..90a7a4f 100644
+----- a/train.py
+--+++ b/train.py
+--@@ -0,0 +1,77 @@
+--+import warnings
+--+
+--+import hydra
+--+import torch
+--+from hydra.utils import instantiate
+--+from omegaconf import OmegaConf
+--+
+--+from src.datasets.data_utils import get_dataloaders
+--+from src.trainer import Trainer
+--+from src.utils.init_utils import set_random_seed, setup_saving_and_logging
+--+
+--+warnings.filterwarnings("ignore", category=UserWarning)
+--+
+--+
+--+@hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
+--+def main(config):
+--+    """
+--+    Main script for training. Instantiates the model, optimizer, scheduler,
+--+    metrics, logger, writer, and dataloaders. Runs Trainer to train and
+--+    evaluate the model.
+--+
+--+    Args:
+--+        config (DictConfig): hydra experiment config.
+--+    """
+--+    set_random_seed(config.trainer.seed)
+--+
+--+    project_config = OmegaConf.to_container(config)
+--+    logger = setup_saving_and_logging(config)
+--+    writer = instantiate(config.writer, logger, project_config)
+--+
+--+    if config.trainer.device == "auto":
+--+        device = "cuda" if torch.cuda.is_available() else "cpu"
+--+    else:
+--+        device = config.trainer.device
+--+
+--+    # setup data_loader instances
+--+    # batch_transforms should be put on device
+--+    dataloaders, batch_transforms = get_dataloaders(config, device)
+--+
+--+    # build model architecture, then print to console
+--+    model = instantiate(config.model).to(device)
+--+    logger.info(model)
+--+
+--+    # get function handles of loss and metrics
+--+    loss_function = instantiate(config.loss_function).to(device)
+--+    metrics = instantiate(config.metrics)
+--+
+--+    # build optimizer, learning rate scheduler
+--+    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+--+    optimizer = instantiate(config.optimizer, params=trainable_params)
+--+    lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
+--+
+--+    # epoch_len = number of iterations for iteration-based training
+--+    # epoch_len = None or len(dataloader) for epoch-based training
+--+    epoch_len = config.trainer.get("epoch_len")
+--+
+--+    trainer = Trainer(
+--+        model=model,
+--+        criterion=loss_function,
+--+        metrics=metrics,
+--+        optimizer=optimizer,
+--+        lr_scheduler=lr_scheduler,
+--+        config=config,
+--+        device=device,
+--+        dataloaders=dataloaders,
+--+        epoch_len=epoch_len,
+--+        logger=logger,
+--+        writer=writer,
+--+        batch_transforms=batch_transforms,
+--+        skip_oom=config.trainer.get("skip_oom", True),
+--+    )
+--+
+--+    trainer.train()
+--+
+--+
+--+if __name__ == "__main__":
+--+    main()
+--\ No newline at end of file
+diff --git a/src/metrics/tracker.py b/src/metrics/tracker.py
+index e547a8d..79712bd 100644
+--- a/src/metrics/tracker.py
++++ b/src/metrics/tracker.py
+@@ -1,3 +1,4 @@
++# Исправленная версия tracker.py
+ import pandas as pd
+ import numpy as np
+ from collections import defaultdict
+@@ -21,7 +22,7 @@ class MetricTracker:
+         self._data = pd.DataFrame(index=keys, columns=["total", "counts", "average"])
+         self.reset()
+         
+-        # Добавляем хранилище для EER метрики
++        
+         self._eer_scores = []
+         self._eer_labels = []
+ 
+@@ -31,48 +32,42 @@ class MetricTracker:
+         """
+         for col in self._data.columns:
+             self._data[col].values[:] = 0
+-        # Сбрасываем EER данные
++        
+         self._eer_scores = []
+         self._eer_labels = []
+ 
+     def update(self, key, value, n=1):
+-        """
+-        Update metrics DataFrame with new value.
++        
+ 
+-        Args:
+-            key (str): metric name.
+-            value (float): metric value on the batch.
+-            n (int): how many times to count this value.
+-        """
+-        # if self.writer is not None:
+-        #     self.writer.add_scalar(key, value)
+         self._data.loc[key, "total"] += value * n
+         self._data.loc[key, "counts"] += n
+         self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
+ 
+     def update_eer(self, scores, labels):
+-        """
+-        Обновляет данные для вычисления EER метрики.
 -        
--         logits_norm = F.normalize(logits, p=2, dim=1)
---        
---       
--         prev_cos = torch.clamp(logits_norm, -1.0 + 1e-8, 1.0 - 1e-8)
--         
---       
--         angle = torch.acos(prev_cos)
---        
---       
--         cos_m = prev_cos.clone()
--         
--         
--diff --git a/src/loss/__init__.py b/src/loss/__init__.py
--index e69de29..058704e 100644
----- a/src/loss/__init__.py
--+++ b/src/loss/__init__.py
--@@ -0,0 +1 @@
--+from src.loss.Asoftmax import AsoftMax
--\ No newline at end of file
--diff --git a/src/metrics/__init__.py b/src/metrics/__init__.py
--index e69de29..8253af9 100644
----- a/src/metrics/__init__.py
--+++ b/src/metrics/__init__.py
--@@ -0,0 +1,3 @@
--+from src.metrics.base_metric import BaseMetric
--+from src.metrics.eer import EERMetric
--+from src.metrics.tracker import MetricTracker
--\ No newline at end of file
--diff --git a/src/metrics/eer.py b/src/metrics/eer.py
--index e69de29..61d466e 100644
----- a/src/metrics/eer.py
--+++ b/src/metrics/eer.py
--@@ -0,0 +1,84 @@
--+import numpy as np
--+from abc import abstractmethod
--+
--+class BaseMetric:
--+    """
--+    Base class for all metrics
--+    """
--+
--+    def __init__(self, name=None, *args, **kwargs):
--+        self.name = name if name is not None else type(self).__name__
--+
--+    @abstractmethod
--+    def __call__(self, **batch):
--+        raise NotImplementedError()
--+
--+class EERMetric(BaseMetric):
--+    """
--+    Equal Error Rate (EER) metric.
--+    Ожидает в batch два поля:
--+        - 'scores': numpy array или torch tensor с предсказанными скорингами
--+        - 'labels': numpy array или torch tensor с метками (1 — bona fide, 0 — spoof)
--+    """
--+
--+    def __init__(self, name="eer"):
--+        super().__init__(name=name)
--+
--+    def __call__(self, **batch):
--+        # Получаем logits и метки
--+        logits = batch["logits"]
--+        labels = batch["labels"]
--+
--+        # Приводим к numpy, если это torch.Tensor
--+        if hasattr(logits, "detach"):
--+            logits = logits.detach().cpu().numpy()
--+        if hasattr(labels, "detach"):
--+            labels = labels.detach().cpu().numpy()
--+
--+        # Получаем скоры из logits (softmax)
--+        import torch.nn.functional as F
--+        if hasattr(logits, "detach"):
--+            # Если это tensor, используем softmax
--+            scores = F.softmax(logits, dim=-1)[:, 1]  # Берем вероятность bona fide
--+        else:
--+            # Если это numpy, конвертируем обратно в tensor
--+            logits_tensor = torch.from_numpy(logits)
--+            scores_tensor = F.softmax(logits_tensor, dim=-1)
--+            scores = scores_tensor[:, 1].numpy()  # Берем вероятность bona fide
--+
--+        # bona fide = 1, spoof = 0
--+        bona_scores = scores[labels == 1]
--+        spoof_scores = scores[labels == 0]
--+
--+        eer, _ = self.compute_eer(bona_scores, spoof_scores)
--+        return eer
--+
--+    @staticmethod
--+    def compute_det_curve(target_scores, nontarget_scores):
--+        n_scores = target_scores.size + nontarget_scores.size
--+        all_scores = np.concatenate((target_scores, nontarget_scores))
--+        labels = np.concatenate(
--+            (np.ones(target_scores.size), np.zeros(nontarget_scores.size)))
--+
--+        indices = np.argsort(all_scores, kind='mergesort')
--+        labels = labels[indices]
--+
--+        tar_trial_sums = np.cumsum(labels)
--+        nontarget_trial_sums = nontarget_scores.size - \
--+            (np.arange(1, n_scores + 1) - tar_trial_sums)
--+
--+        frr = np.concatenate(
--+            (np.atleast_1d(0), tar_trial_sums / target_scores.size))
--+        far = np.concatenate((np.atleast_1d(1), nontarget_trial_sums /
--+                              nontarget_scores.size))
--+        thresholds = np.concatenate(
--+            (np.atleast_1d(all_scores[indices[0]] - 0.001), all_scores[indices]))
--+        return frr, far, thresholds
--+
--+    @classmethod
--+    def compute_eer(cls, bona_scores, spoof_scores):
--+        frr, far, thresholds = cls.compute_det_curve(bona_scores, spoof_scores)
--+        abs_diffs = np.abs(frr - far)
--+        min_index = np.argmin(abs_diffs)
--+        eer = np.mean((frr[min_index], far[min_index]))
--+        return eer, thresholds[min_index]
--\ No newline at end of file
--diff --git a/src/metrics/tracker.py b/src/metrics/tracker.py
--index 88dcc42..e547a8d 100644
----- a/src/metrics/tracker.py
--+++ b/src/metrics/tracker.py
--@@ -1,4 +1,6 @@
-- import pandas as pd
--+import numpy as np
--+from collections import defaultdict
-- 
-- 
-- class MetricTracker:
--@@ -18,6 +20,10 @@ class MetricTracker:
--         self.writer = writer
--         self._data = pd.DataFrame(index=keys, columns=["total", "counts", "average"])
--         self.reset()
--+        
--+        # Добавляем хранилище для EER метрики
--+        self._eer_scores = []
--+        self._eer_labels = []
-- 
--     def reset(self):
--         """
--@@ -25,6 +31,9 @@ class MetricTracker:
--         """
--         for col in self._data.columns:
--             self._data[col].values[:] = 0
--+        # Сбрасываем EER данные
--+        self._eer_scores = []
--+        self._eer_labels = []
-- 
--     def update(self, key, value, n=1):
--         """
--@@ -41,6 +50,30 @@ class MetricTracker:
--         self._data.loc[key, "counts"] += n
--         self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
-- 
--+    def update_eer(self, scores, labels):
--+        """
--+        Обновляет данные для вычисления EER метрики.
--+        
--+        Args:
--+            scores (torch.Tensor): предсказанные скоры
--+            labels (torch.Tensor): истинные метки
--+        """
--+        self._eer_scores.extend(scores.detach().cpu().numpy())
--+        self._eer_labels.extend(labels.detach().cpu().numpy())
--+
--+    def compute_eer(self):
--+        """
--+        Вычисляет EER на основе накопленных данных.
--+        """
--+        if not self._eer_scores:
--+            return 0.0
--+        
--+        from src.metrics.eer import EERMetric
--+        eer_metric = EERMetric()
--+        eer_value = eer_metric(scores=np.array(self._eer_scores), 
--+                              labels=np.array(self._eer_labels))
--+        return eer_value
--+
--     def avg(self, key):
--         """
--         Return average value for a given metric.
--@@ -50,6 +83,8 @@ class MetricTracker:
--         Returns:
--             average_value (float): average value for the metric.
--         """
--+        if key == "eer":
--+            return self.compute_eer()
--         return self._data.average[key]
-- 
--     def result(self):
--@@ -60,7 +95,11 @@ class MetricTracker:
--             average_metrics (dict): dict, containing average metrics
--                 for each metric name.
--         """
---        return dict(self._data.average)
--+        result = dict(self._data.average)
--+        # Добавляем EER если есть данные
--+        if self._eer_scores:
--+            result['eer'] = self.compute_eer()
--+        return result
-- 
--     def keys(self):
--         """
--@@ -69,4 +108,7 @@ class MetricTracker:
--         Returns:
--             metric_keys (Index): all metric names in the table.
--         """
---        return self._data.total.keys()
--\ No newline at end of file
--+        keys = list(self._data.total.keys())
--+        if self._eer_scores:
--+            keys.append('eer')
--+        return keys
--\ No newline at end of file
--diff --git a/src/model/__init__.py b/src/model/__init__.py
--index e69de29..d5cd956 100644
----- a/src/model/__init__.py
--+++ b/src/model/__init__.py
--@@ -0,0 +1 @@
--+from src.model.model import LCNN
--\ No newline at end of file
--diff --git a/src/model/model.py b/src/model/model.py
--index 30fbc0f..6d0bf94 100644
----- a/src/model/model.py
--+++ b/src/model/model.py
--@@ -74,7 +74,8 @@ class LCNN(nn.Module):
--         self.BatchNorm31 = nn.BatchNorm1d(80)
--         self.fc32 = nn.Linear(80, num_classes)
-- 
---    def forward(self, x):
--+    def forward(self, data_object, **kwargs):
--+        x = data_object
--         x = self.conv1(x)
--         x = self.mfm2(x)
--         x = self.dropout2(x)
--@@ -132,6 +133,5 @@ class LCNN(nn.Module):
--         x = self.mfm30(x)
--         x = x.squeeze(-1).squeeze(-1)
--         x = self.BatchNorm31(x)
---        x = self.fc32(x)
---        return x
---
--+        logits = self.fc32(x)
--+        return {"logits": logits}
--\ No newline at end of file
--diff --git a/src/trainer/__init__.py b/src/trainer/__init__.py
--index e69de29..d6c86a0 100644
----- a/src/trainer/__init__.py
--+++ b/src/trainer/__init__.py
--@@ -0,0 +1,3 @@
--+from src.trainer.trainer import Trainer
--+from src.trainer.base_trainer import BaseTrainer
--+from src.trainer.inferencer import Inferencer
--\ No newline at end of file
--diff --git a/src/trainer/inferencer.py b/src/trainer/inferencer.py
--index 92ff156..06185a3 100644
----- a/src/trainer/inferencer.py
--+++ b/src/trainer/inferencer.py
--@@ -24,6 +24,7 @@ class Inferencer(BaseTrainer):
--         metrics=None,
--         batch_transforms=None,
--         skip_model_load=False,
--+        writer=None,
--     ):
--         """
--         Initialize the Inferencer.
--@@ -68,10 +69,11 @@ class Inferencer(BaseTrainer):
-- 
--         # define metrics
--         self.metrics = metrics
--+        self.writer = writer
--         if self.metrics is not None:
--             self.evaluation_metrics = MetricTracker(
--                 *[m.name for m in self.metrics["inference"]],
---                writer=None,
--+                writer=writer,
--             )
--         else:
--             self.evaluation_metrics = None
--@@ -185,4 +187,12 @@ class Inferencer(BaseTrainer):
--                     metrics=self.evaluation_metrics,
--                 )
-- 
---        return self.evaluation_metrics.result()
--\ No newline at end of file
--+        results = self.evaluation_metrics.result()
--+        
--+        # Логируем финальные метрики в CometML
--+        if self.writer is not None:
--+            for metric_name, metric_value in results.items():
--+                self.writer.add_scalar(f"inference_{part}_{metric_name}", metric_value, 0)
--+                print(f"    {part}_{metric_name}: {metric_value}")
--+        
--+        return results
--\ No newline at end of file
--diff --git a/src/trainer/trainer.py b/src/trainer/trainer.py
--index a866726..9d4d9a0 100644
----- a/src/trainer/trainer.py
--+++ b/src/trainer/trainer.py
--@@ -1,6 +1,6 @@
-- from src.metrics.tracker import MetricTracker
-- from src.trainer.base_trainer import BaseTrainer
---
--+import torch
-- 
-- class Trainer(BaseTrainer):
--     """
--@@ -41,39 +41,31 @@ class Trainer(BaseTrainer):
--         batch.update(all_losses)
-- 
--         if self.is_train:
---            batch["loss"].backward()  # sum of all losses is always called loss
--+            batch["loss"].backward()
--             self._clip_grad_norm()
--             self.optimizer.step()
--             if self.lr_scheduler is not None:
--                 self.lr_scheduler.step()
-- 
---        # update metrics for each loss (in case of multiple losses)
--+       
--         for loss_name in self.config.writer.loss_names:
--             metrics.update(loss_name, batch[loss_name].item())
-- 
--+       
--+        if "logits" in batch and not self.is_train:
--+            scores = torch.softmax(batch["logits"], dim=1)[:, 1]
--+            labels = batch["labels"]
--+            metrics.update_eer(scores, labels)
--+
--+        
--         for met in metric_funcs:
---            metrics.update(met.name, met(**batch))
--+            if met.name != "eer":
--+                metrics.update(met.name, met(**batch))
--         return batch
-- 
--     def _log_batch(self, batch_idx, batch, mode="train"):
--         """
--         Log data from batch. Calls self.writer.add_* to log data
--         to the experiment tracker.
---
---        Args:
---            batch_idx (int): index of the current batch.
---            batch (dict): dict-based batch after going through
---                the 'process_batch' function.
---            mode (str): train or inference. Defines which logging
---                rules to apply.
--         """
---        # method to log data from you batch
---        # such as audio, text or images, for example
---
---        # logging scheme might be different for different partitions
---        if mode == "train":  # the method is called only every self.log_step steps
---            # Log Stuff
---            pass
---        else:
---            # Log Stuff
---            pass
--\ No newline at end of file
--+        pass
--\ No newline at end of file
--diff --git a/src/transforms/__init__.py b/src/transforms/__init__.py
--index e69de29..bea0123 100644
----- a/src/transforms/__init__.py
--+++ b/src/transforms/__init__.py
--@@ -0,0 +1,3 @@
--+from src.transforms.normalize import Normalize
--+from src.transforms.scale import RandomScale1D
--+from src.transforms.stft import AudioFrontend
--\ No newline at end of file
--diff --git a/src/transforms/normalize.py b/src/transforms/normalize.py
--index 035b045..38aa0d3 100644
----- a/src/transforms/normalize.py
--+++ b/src/transforms/normalize.py
--@@ -1,30 +1,28 @@
-- import torch
---from torch import nn
---
---class Normalize1D(nn.Module):
--+import torch.nn as nn
--     
--+class Normalize(nn.Module):
--     """
---    Batch-version of Normalize for 1D Input.
---    Used as an example of a batch transform.
--+    Нормализация тензоров по каналам.
--     """
-- 
--     def __init__(self, mean, std):
---        """
---        Args:
---            mean (float): mean used in the normalization.
---            std (float): std used in the normalization.
---        """
--         super().__init__()
---
---        self.mean = mean
---        self.std = std
--+        self.mean = torch.tensor(mean).view(1, -1, 1, 1)
--+        self.std = torch.tensor(std).view(1, -1, 1, 1)
-- 
--     def forward(self, x):
--         """
--+        Применяет нормализацию.
--+        
--         Args:
---            x (Tensor): input tensor.
--+            x (torch.Tensor): входной тензор [batch_size, channels, height, width]
--+            
--         Returns:
---            x (Tensor): normalized tensor.
--+            torch.Tensor: нормализованный тензор
--         """
---        x = (x - self.mean) / self.std
---        return x
--\ No newline at end of file
--+        device = x.device
--+        mean = self.mean.to(device)
--+        std = self.std.to(device)
--+        
--+        return (x - mean) / std
--\ No newline at end of file
--diff --git a/src/transforms/stft.py b/src/transforms/stft.py
--index 1fcbc9c..954ff81 100644
----- a/src/transforms/stft.py
--+++ b/src/transforms/stft.py
--@@ -1,9 +1,9 @@
-- import torch
--+import torch.nn as nn
-- 
---import torch
-- 
-- def audio_frontend(waveform):
---    
--+
--     n_fft = 1024
--     hop_length = 256
--     win_length = 1024
--@@ -22,4 +22,16 @@ def audio_frontend(waveform):
--     magnitude = torch.abs(stft)
--     log_magnitude = torch.log(magnitude + 1e-8)
--     log_magnitude = log_magnitude.unsqueeze(0)
---    return log_magnitude
--\ No newline at end of file
--+    return log_magnitude
--+
--+
--+class AudioFrontend(nn.Module):
--+    
--+    def __init__(self):
--+        super().__init__()
--+    
--+    def forward(self, waveform):
--+      
--+
--+
--+        return audio_frontend(waveform)
--\ No newline at end of file
--diff --git a/train.py b/train.py
--index e69de29..90a7a4f 100644
----- a/train.py
--+++ b/train.py
--@@ -0,0 +1,77 @@
--+import warnings
--+
--+import hydra
--+import torch
--+from hydra.utils import instantiate
--+from omegaconf import OmegaConf
--+
--+from src.datasets.data_utils import get_dataloaders
--+from src.trainer import Trainer
--+from src.utils.init_utils import set_random_seed, setup_saving_and_logging
--+
--+warnings.filterwarnings("ignore", category=UserWarning)
--+
--+
--+@hydra.main(version_base=None, config_path="src/configs", config_name="baseline")
--+def main(config):
--+    """
--+    Main script for training. Instantiates the model, optimizer, scheduler,
--+    metrics, logger, writer, and dataloaders. Runs Trainer to train and
--+    evaluate the model.
--+
--+    Args:
--+        config (DictConfig): hydra experiment config.
--+    """
--+    set_random_seed(config.trainer.seed)
--+
--+    project_config = OmegaConf.to_container(config)
--+    logger = setup_saving_and_logging(config)
--+    writer = instantiate(config.writer, logger, project_config)
--+
--+    if config.trainer.device == "auto":
--+        device = "cuda" if torch.cuda.is_available() else "cpu"
--+    else:
--+        device = config.trainer.device
--+
--+    # setup data_loader instances
--+    # batch_transforms should be put on device
--+    dataloaders, batch_transforms = get_dataloaders(config, device)
--+
--+    # build model architecture, then print to console
--+    model = instantiate(config.model).to(device)
--+    logger.info(model)
--+
--+    # get function handles of loss and metrics
--+    loss_function = instantiate(config.loss_function).to(device)
--+    metrics = instantiate(config.metrics)
--+
--+    # build optimizer, learning rate scheduler
--+    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
--+    optimizer = instantiate(config.optimizer, params=trainable_params)
--+    lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
--+
--+    # epoch_len = number of iterations for iteration-based training
--+    # epoch_len = None or len(dataloader) for epoch-based training
--+    epoch_len = config.trainer.get("epoch_len")
--+
--+    trainer = Trainer(
--+        model=model,
--+        criterion=loss_function,
--+        metrics=metrics,
--+        optimizer=optimizer,
--+        lr_scheduler=lr_scheduler,
--+        config=config,
--+        device=device,
--+        dataloaders=dataloaders,
--+        epoch_len=epoch_len,
--+        logger=logger,
--+        writer=writer,
--+        batch_transforms=batch_transforms,
--+        skip_oom=config.trainer.get("skip_oom", True),
--+    )
--+
--+    trainer.train()
--+
--+
--+if __name__ == "__main__":
--+    main()
--\ No newline at end of file
+-        Args:
+-            scores (torch.Tensor): предсказанные скоры
+-            labels (torch.Tensor): истинные метки
+-        """
++     
++
+         self._eer_scores.extend(scores.detach().cpu().numpy())
+         self._eer_labels.extend(labels.detach().cpu().numpy())
+ 
+     def compute_eer(self):
+-        """
+-        Вычисляет EER на основе накопленных данных.
+-        """
++
+         if not self._eer_scores:
+             return 0.0
+         
++        scores = np.array(self._eer_scores)
++        labels = np.array(self._eer_labels)
++        
++        bona_scores = scores[labels == 1]
++        spoof_scores = scores[labels == 0]
++        
++        if len(bona_scores) == 0 or len(spoof_scores) == 0:
++            return 0.0
++        
++        # Вычисляем EER
+         from src.metrics.eer import EERMetric
+         eer_metric = EERMetric()
+-        eer_value = eer_metric(scores=np.array(self._eer_scores), 
+-                              labels=np.array(self._eer_labels))
+-        return eer_value
++        eer, _ = eer_metric.compute_eer(bona_scores, spoof_scores)
++        return eer
+ 
+     def avg(self, key):
+         """
+@@ -96,7 +91,6 @@ class MetricTracker:
+                 for each metric name.
+         """
+         result = dict(self._data.average)
+-        # Добавляем EER если есть данные
+         if self._eer_scores:
+             result['eer'] = self.compute_eer()
+         return result

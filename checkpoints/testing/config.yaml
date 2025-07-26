@@ -8,7 +8,7 @@ model:
   dropout_p: 0.3
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.001
+  lr: 0.0001
   weight_decay: 0.0001
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
@@ -80,7 +80,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: pytorch_template
   workspace: null
-  run_id: g4iurtd5
+  run_id: wcvqlape
   run_name: testing
   mode: online
   loss_names:
