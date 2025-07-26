@@ -22,7 +22,7 @@ class AsoftMax(nn.Module):
         """
        
         logits_norm = F.normalize(logits, p=2, dim=1)
-        prev_cos = torch.clamp(logits_norm, -1.0 + 1e-8, 1.0 - 1e-8)
+        prev_cos = torch.clamp(logits_norm, -1.0 + 1e-6, 1.0 - 1e-6)
         
         angle = torch.acos(prev_cos)
         cos_m = prev_cos.clone()
