@@ -47,20 +47,24 @@ class Trainer(BaseTrainer):
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-       
+        
         for loss_name in self.config.writer.loss_names:
             metrics.update(loss_name, batch[loss_name].item())
 
-       
-        if "logits" in batch and not self.is_train:
+      
+        if "logits" in batch:
             scores = torch.softmax(batch["logits"], dim=1)[:, 1]
             labels = batch["labels"]
             metrics.update_eer(scores, labels)
 
-        
+       
         for met in metric_funcs:
             if met.name != "eer":
-                metrics.update(met.name, met(**batch))
+                try:
+                    metrics.update(met.name, met(**batch))
+                except Exception as e:
+                    print(f"Ошибка в метрике {met.name}: {e}")
+                    continue
         return batch
 
     def _log_batch(self, batch_idx, batch, mode="train"):
