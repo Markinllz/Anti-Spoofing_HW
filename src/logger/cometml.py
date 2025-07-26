@@ -56,7 +56,7 @@ class CometMLWriter:
 
                 # Проверяем длину run_id перед использованием как experiment_key
                 if self.run_id and len(self.run_id) >= 32:
-                    self.exp = exp_class(experiment_key=self.run_id)
+                self.exp = exp_class(experiment_key=self.run_id)
                 else:
                     # Если run_id слишком короткий, создаем эксперимент без experiment_key
                     self.exp = exp_class()

@@ -3,7 +3,7 @@ train:
   name: train
   label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt
   audio_path: ${data_path}/ASVspoof2019_LA_train/flac
-  out_path: ${data_path}/train_index.json
+  out_path: data/train_index.json
   instance_transforms: ${transforms.instance_transforms}
   
 val:
@@ -11,7 +11,7 @@ val:
   name: val
   label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt
   audio_path: ${data_path}/ASVspoof2019_LA_dev/flac
-  out_path: ${data_path}/val_index.json
+  out_path: data/val_index.json
   instance_transforms: ${transforms.instance_transforms}
   
 test:
@@ -19,5 +19,5 @@ test:
   name: test
   label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt
   audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
-  out_path: ${data_path}/test_index.json
+  out_path: data/test_index.json
   instance_transforms: ${transforms.instance_transforms} 
