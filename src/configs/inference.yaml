@@ -1,0 +1,31 @@
+defaults:
+  - _self_
+  - model: lcnn
+  - metrics: default
+  - datasets: asvspoof2019
+  - dataloader: default
+  - transforms: default
+  - writer: cometml
+
+
+inferencer:
+  seed: 42
+  device: "auto"
+  from_pretrained: "checkpoints/testing/last.pth" 
+  save_path: "inference_results"
+  log_metrics: true
+  save_predictions: true
+
+
+data_path: ${oc.env:DATA_PATH,data}
+
+project_name: anti-spoofing-inference
+run_name: inference-test
+
+dataloader:
+  test:
+    _target_: torch.utils.data.DataLoader
+    batch_size: 32
+    num_workers: 4
+    pin_memory: true
+    shuffle: false 

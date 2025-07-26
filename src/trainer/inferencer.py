@@ -24,6 +24,7 @@ class Inferencer(BaseTrainer):
         metrics=None,
         batch_transforms=None,
         skip_model_load=False,
+        writer=None,
     ):
         """
         Initialize the Inferencer.
@@ -68,10 +69,11 @@ class Inferencer(BaseTrainer):
 
         # define metrics
         self.metrics = metrics
+        self.writer = writer
         if self.metrics is not None:
             self.evaluation_metrics = MetricTracker(
                 *[m.name for m in self.metrics["inference"]],
-                writer=None,
+                writer=writer,
             )
         else:
             self.evaluation_metrics = None
@@ -185,4 +187,12 @@ class Inferencer(BaseTrainer):
                     metrics=self.evaluation_metrics,
                 )
 
-        return self.evaluation_metrics.result()
+        results = self.evaluation_metrics.result()
+        
+        # Логируем финальные метрики в CometML
+        if self.writer is not None:
+            for metric_name, metric_value in results.items():
+                self.writer.add_scalar(f"inference_{part}_{metric_name}", metric_value, 0)
+                print(f"    {part}_{metric_name}: {metric_value}")
+        
+        return results

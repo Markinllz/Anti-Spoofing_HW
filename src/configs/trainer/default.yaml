@@ -1,0 +1,15 @@
+seed: 42
+device: auto
+n_epochs: 100
+save_period: 10
+val_period: 1
+skip_oom: true
+max_grad_norm: 1.0
+log_step: 50
+save_dir: checkpoints
+device_tensors:
+  - data_object
+  - labels
+monitor: min val_eer
+early_stop: 20 
+override: True

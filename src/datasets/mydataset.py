@@ -9,30 +9,33 @@ from pathlib import Path
 
 class AudioSpoofingDataset(BaseDataset):
     """
-    Example of a nested dataset class to show basic structure.
-    Uses random vectors as objects and random integers between
-    0 and n_classes-1 as labels.
+    Dataset class for ASVspoof2019 audio anti-spoofing challenge.
     """
 
     def __init__(
-        self, name="train", *args, **kwargs
+        self, name="train", label_path=None, audio_path=None, out_path=None, 
+        instance_transforms=None, *args, **kwargs
     ):
         """
         Args:
-            n_classes (int): number of classes.
-            name (str): partition name
+            name (str): partition name (train, val, test)
+            label_path (str): path to the protocol file
+            audio_path (str): path to the directory with .flac files
+            out_path (str): where to save index.json
+            instance_transforms (dict): transforms to apply to instances
         """
-        index_path = ROOT_PATH / "data" / "example" / name / "index.json"
-
-        # each nested dataset class must have an index field that
-        # contains list of dicts. Each dict contains information about
-        # the object, including label, path, etc.
-        if index_path.exists():
-            index = read_json(str(index_path))
+        self.name = name
+        self.label_path = label_path
+        self.audio_path = audio_path
+        self.out_path = out_path
+        
+        # Create index if it doesn't exist
+        if Path(out_path).exists():
+            index = read_json(out_path)
         else:
-            index = self._create_index(name)
+            index = self._create_index(label_path, audio_path, out_path)
 
-        super().__init__(index, *args, **kwargs)
+        super().__init__(index, instance_transforms=instance_transforms, *args, **kwargs)
 
     def _create_index(self, label_path, audio_path, out_path):
         """
@@ -52,7 +55,7 @@ class AudioSpoofingDataset(BaseDataset):
                 parts = line.strip().split()
                 file_id = parts[1]
                 class_name = parts[-1]
-                label = 0 if class_name == "bonefide" else 1
+                label = 0 if class_name == "bonafide" else 1  # Fixed typo
                 path = str(Path(audio_path) / f"{file_id}.flac")
                 index.append(
                     {
@@ -60,7 +63,7 @@ class AudioSpoofingDataset(BaseDataset):
                         "label" : label
                     }
                 )
-        print("Seperate to path and labels complete")
+        print("Separate to path and labels complete")
         write_json(index, out_path)
 
         print(f"Created {len(index)} entries in {out_path}")

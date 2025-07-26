@@ -1,30 +1,28 @@
 import torch
-from torch import nn
-
-class Normalize1D(nn.Module):
+import torch.nn as nn
     
+class Normalize(nn.Module):
     """
-    Batch-version of Normalize for 1D Input.
-    Used as an example of a batch transform.
+    Нормализация тензоров по каналам.
     """
 
     def __init__(self, mean, std):
-        """
-        Args:
-            mean (float): mean used in the normalization.
-            std (float): std used in the normalization.
-        """
         super().__init__()
-
-        self.mean = mean
-        self.std = std
+        self.mean = torch.tensor(mean).view(1, -1, 1, 1)
+        self.std = torch.tensor(std).view(1, -1, 1, 1)
 
     def forward(self, x):
         """
+        Применяет нормализацию.
+        
         Args:
-            x (Tensor): input tensor.
+            x (torch.Tensor): входной тензор [batch_size, channels, height, width]
+            
         Returns:
-            x (Tensor): normalized tensor.
+            torch.Tensor: нормализованный тензор
         """
-        x = (x - self.mean) / self.std
-        return x
+        device = x.device
+        mean = self.mean.to(device)
+        std = self.std.to(device)
+        
+        return (x - mean) / std

@@ -1,0 +1,21 @@
+instance_transforms:
+  data_object: ${transforms.stft}
+
+stft:
+  _target_: src.transforms.stft.AudioFrontend
+
+batch_transforms:
+  train:
+    data_object:
+      _target_: torch.nn.Sequential
+      _args_:
+        - _target_: src.transforms.normalize.Normalize
+          mean: [0.0]
+          std: [1.0]
+  inference:
+    data_object:
+      _target_: torch.nn.Sequential
+      _args_:
+        - _target_: src.transforms.normalize.Normalize
+          mean: [0.0]
+          std: [1.0]

@@ -3,6 +3,7 @@ import random
 from typing import List
 
 import torch
+import torchaudio
 from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
@@ -73,15 +74,23 @@ class BaseDataset(Dataset):
 
     def load_object(self, path):
         """
-        Load object from disk.
+        Load audio object from disk.
 
         Args:
-            path (str): path to the object.
+            path (str): path to the audio file.
         Returns:
-            data_object (Tensor):
+            data_object (Tensor): audio tensor
         """
-        data_object = torch.load(path)
-        return data_object
+        try:
+            waveform, sample_rate = torchaudio.load(path)
+            # Convert to mono if stereo
+            if waveform.shape[0] > 1:
+                waveform = torch.mean(waveform, dim=0, keepdim=True)
+            return waveform
+        except Exception as e:
+            logger.error(f"Error loading audio file {path}: {e}")
+            # Return zero tensor as fallback
+            return torch.zeros(1, 16000)  # 1 second of silence at 16kHz
 
     def preprocess_data(self, instance_data):
         """
@@ -99,9 +108,10 @@ class BaseDataset(Dataset):
         """
         if self.instance_transforms is not None:
             for transform_name in self.instance_transforms.keys():
-                instance_data[transform_name] = self.instance_transforms[
-                    transform_name
-                ](instance_data[transform_name])
+                if transform_name in instance_data:
+                    instance_data[transform_name] = self.instance_transforms[
+                        transform_name
+                    ](instance_data[transform_name])
         return instance_data
     
     @staticmethod

@@ -74,7 +74,8 @@ class LCNN(nn.Module):
         self.BatchNorm31 = nn.BatchNorm1d(80)
         self.fc32 = nn.Linear(80, num_classes)
 
-    def forward(self, x):
+    def forward(self, data_object, **kwargs):
+        x = data_object
         x = self.conv1(x)
         x = self.mfm2(x)
         x = self.dropout2(x)
@@ -132,6 +133,5 @@ class LCNN(nn.Module):
         x = self.mfm30(x)
         x = x.squeeze(-1).squeeze(-1)
         x = self.BatchNorm31(x)
-        x = self.fc32(x)
-        return x
-
+        logits = self.fc32(x)
+        return {"logits": logits}

@@ -1,0 +1,17 @@
+defaults:
+  - _self_
+  - model: lcnn
+  - optimizer: adam
+  - lr_scheduler: step
+  - loss_function: asoftmax
+  - metrics: default
+  - datasets: asvspoof2019
+  - dataloader: default
+  - transforms: default
+  - writer: wandb
+  - trainer: default
+
+data_path: ${oc.env:DATA_PATH,data}
+project_name: anti-spoofing
+run_name: anti-spoofing-experiment
+

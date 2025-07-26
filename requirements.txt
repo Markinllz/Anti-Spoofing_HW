@@ -1,13 +1,37 @@
+# Основные PyTorch зависимости
 torch==2.2.0
 torchvision==0.17.0
-torchmetrics
-numpy==1.26.4
-tqdm
-matplotlib
-pandas
-wandb
-hydra-core
+torchaudio==2.2.0
+torchmetrics==1.7.4
 
+# Научные вычисления и обработка данных
+numpy==1.26.4
+pandas==2.3.1
+matplotlib==3.9.4
+scipy
+
+# Аудио обработка
+soundfile==0.13.1
+librosa
+
+# Логирование и эксперименты
+wandb==0.21.0
+comet-ml==3.50.0
+hydra-core==1.3.2
+omegaconf==2.3.0
+
+# Утилиты
+tqdm==4.67.1
+psutil==7.0.0
+requests==2.32.4
+pyyaml==6.0.2
+
+# Разработка и форматирование кода
 black
 isort
 pre-commit
+flake8
+
+# Дополнительные зависимости для ML
+scikit-learn
+seaborn

@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+from collections import defaultdict
 
 
 class MetricTracker:
@@ -18,6 +20,10 @@ class MetricTracker:
         self.writer = writer
         self._data = pd.DataFrame(index=keys, columns=["total", "counts", "average"])
         self.reset()
+        
+        # Добавляем хранилище для EER метрики
+        self._eer_scores = []
+        self._eer_labels = []
 
     def reset(self):
         """
@@ -25,6 +31,9 @@ class MetricTracker:
         """
         for col in self._data.columns:
             self._data[col].values[:] = 0
+        # Сбрасываем EER данные
+        self._eer_scores = []
+        self._eer_labels = []
 
     def update(self, key, value, n=1):
         """
@@ -41,6 +50,30 @@ class MetricTracker:
         self._data.loc[key, "counts"] += n
         self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
 
+    def update_eer(self, scores, labels):
+        """
+        Обновляет данные для вычисления EER метрики.
+        
+        Args:
+            scores (torch.Tensor): предсказанные скоры
+            labels (torch.Tensor): истинные метки
+        """
+        self._eer_scores.extend(scores.detach().cpu().numpy())
+        self._eer_labels.extend(labels.detach().cpu().numpy())
+
+    def compute_eer(self):
+        """
+        Вычисляет EER на основе накопленных данных.
+        """
+        if not self._eer_scores:
+            return 0.0
+        
+        from src.metrics.eer import EERMetric
+        eer_metric = EERMetric()
+        eer_value = eer_metric(scores=np.array(self._eer_scores), 
+                              labels=np.array(self._eer_labels))
+        return eer_value
+
     def avg(self, key):
         """
         Return average value for a given metric.
@@ -50,6 +83,8 @@ class MetricTracker:
         Returns:
             average_value (float): average value for the metric.
         """
+        if key == "eer":
+            return self.compute_eer()
         return self._data.average[key]
 
     def result(self):
@@ -60,7 +95,11 @@ class MetricTracker:
             average_metrics (dict): dict, containing average metrics
                 for each metric name.
         """
-        return dict(self._data.average)
+        result = dict(self._data.average)
+        # Добавляем EER если есть данные
+        if self._eer_scores:
+            result['eer'] = self.compute_eer()
+        return result
 
     def keys(self):
         """
@@ -69,4 +108,7 @@ class MetricTracker:
         Returns:
             metric_keys (Index): all metric names in the table.
         """
-        return self._data.total.keys()
+        keys = list(self._data.total.keys())
+        if self._eer_scores:
+            keys.append('eer')
+        return keys
