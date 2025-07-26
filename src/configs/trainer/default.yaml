@@ -4,7 +4,7 @@ n_epochs: 100
 save_period: 10
 val_period: 1
 skip_oom: true
-max_grad_norm: 1.0
+max_grad_norm: 0.5
 log_step: 50
 save_dir: checkpoints
 device_tensors:

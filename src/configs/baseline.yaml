@@ -3,7 +3,7 @@ defaults:
   - model: lcnn
   - optimizer: adam
   - lr_scheduler: step
-  - loss_function: asoftmax
+  - loss_function: crossentropy
   - metrics: default
   - datasets: asvspoof2019
   - dataloader: default
