@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import List
+from typing import List, Dict, Any, Optional
 
 import torch
 import torchaudio
@@ -11,66 +11,65 @@ logger = logging.getLogger(__name__)
 
 class BaseDataset(Dataset):
     """
-    Base class for the datasets.
-
-    Given a proper index (list[dict]), allows to process different datasets
-    for the same task in the identical manner. Therefore, to work with
-    several datasets, the user only have to define index in a nested class.
+    Base class for all datasets.
     """
 
     def __init__(
-        self, index, limit=None, shuffle_index=False, instance_transforms=None
+        self,
+        index: List[Dict[str, Any]],
+        instance_transforms: Optional[Dict[str, Any]] = None,
+        *args,
+        **kwargs,
     ):
         """
         Args:
-            index (list[dict]): list, containing dict for each element of
-                the dataset. The dict has required metadata information,
-                such as label and object path.
-            limit (int | None): if not None, limit the total number of elements
-                in the dataset to 'limit' elements.
-            shuffle_index (bool): if True, shuffle the index. Uses python
-                random package with seed 42.
-            instance_transforms (dict[Callable] | None): transforms that
-                should be applied on the instance. Depend on the
-                tensor name.
+            index (List[Dict[str, Any]]): list of dictionaries, each containing
+                the data for one sample.
+            instance_transforms (Optional[Dict[str, Any]]): transforms to apply
+                to instances. Depend on the tensor name.
         """
-        self._assert_index_is_valid(index)
-
-        index = self._shuffle_and_limit_index(index, limit, shuffle_index)
-        self._index: List[dict] = index
-
+        self.index = index
         self.instance_transforms = instance_transforms
 
-    def __getitem__(self, ind):
-        """
-        Get element from the index, preprocess it, and combine it
-        into a dict.
+    def __len__(self):
+        return len(self.index)
 
-        Notice that the choice of key names is defined by the template user.
-        However, they should be consistent across dataset getitem, collate_fn,
-        loss_function forward method, and model forward method.
+    def __getitem__(self, idx):
+        """
+        Get item by index.
 
         Args:
-            ind (int): index in the self.index list.
+            idx (int): index of the item.
+
         Returns:
-            instance_data (dict): dict, containing instance
-                (a single dataset element).
+            dict: item data.
         """
-        data_dict = self._index[ind]
-        data_path = data_dict["path"]
-        data_object = self.load_object(data_path)
-        data_label = data_dict["label"]
+        item = self.index[idx]
+        
+        # Применяем instance transforms
+        if self.instance_transforms is not None:
+            item = self._apply_instance_transforms(item)
+        
+        return item
 
-        instance_data = {"data_object": data_object, "labels": data_label}
-        instance_data = self.preprocess_data(instance_data)
-
-        return instance_data
-
-    def __len__(self):
+    def _apply_instance_transforms(self, item: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Get length of the dataset (length of the index).
+        Apply instance transforms to the item.
+
+        Args:
+            item (Dict[str, Any]): item data.
+
+        Returns:
+            Dict[str, Any]: transformed item data.
         """
-        return len(self._index)
+        for transform_name, transform in self.instance_transforms.items():
+            if transform_name in item:
+                try:
+                    item[transform_name] = transform(item[transform_name])
+                except Exception as e:
+                    raise
+        
+        return item
 
     def load_object(self, path):
         """
@@ -126,74 +125,63 @@ class BaseDataset(Dataset):
         the __init__ before shuffling and limiting.
 
         Args:
-            index (list[dict]): list, containing dict for each element of
-                the dataset. The dict has required metadata information,
-                such as label and object path.
+            index (list): list of records to filter.
+
         Returns:
-            index (list[dict]): list, containing dict for each element of
-                the dataset that satisfied the condition. The dict has
-                required metadata information, such as label and object path.
+            list: filtered list of records.
         """
-        # Filter logic
-        pass
+        return index
 
     @staticmethod
     def _assert_index_is_valid(index):
         """
-        Check the structure of the index and ensure it satisfies the desired
-        conditions.
+        Assert that the index is valid.
 
         Args:
-            index (list[dict]): list, containing dict for each element of
-                the dataset. The dict has required metadata information,
-                such as label and object path.
+            index (list): list of records to validate.
         """
-        for entry in index:
-            assert "path" in entry, (
-                "Each dataset item should include field 'path'" " - path to audio file."
-            )
-            assert "label" in entry, (
-                "Each dataset item should include field 'label'"
-                " - object ground-truth label."
-            )
+        assert isinstance(index, list), "Index should be a list"
+        assert len(index) > 0, "Index should not be empty"
+        for record in index:
+            assert isinstance(record, dict), "Each record should be a dict"
+            assert "path" in record, "Each record should have a 'path' field"
+            assert "label" in record, "Each record should have a 'label' field"
 
     @staticmethod
     def _sort_index(index):
         """
-        Sort index via some rules.
+        Sort the index by some criterion.
 
         This is not used in the example. The method should be called in
-        the __init__ before shuffling and limiting and after filtering.
+        the __init__ before shuffling and limiting.
 
         Args:
-            index (list[dict]): list, containing dict for each element of
-                the dataset. The dict has required metadata information,
-                such as label and object path.
+            index (list): list of records to sort.
+
         Returns:
-            index (list[dict]): sorted list, containing dict for each element
-                of the dataset. The dict has required metadata information,
-                such as label and object path.
+            list: sorted list of records.
         """
-        return sorted(index, key=lambda x: x["KEY_FOR_SORTING"])
+        return index
 
     @staticmethod
     def _shuffle_and_limit_index(index, limit, shuffle_index):
         """
-        Shuffle elements in index and limit the total number of elements.
+        Shuffle and limit the index.
+
+        This is not used in the example. The method should be called in
+        the __init__ before shuffling and limiting.
 
         Args:
-            index (list[dict]): list, containing dict for each element of
-                the dataset. The dict has required metadata information,
-                such as label and object path.
-            limit (int | None): if not None, limit the total number of elements
-                in the dataset to 'limit' elements.
-            shuffle_index (bool): if True, shuffle the index. Uses python
-                random package with seed 42.
+            index (list): list of records to shuffle and limit.
+            limit (int): maximum number of records to keep.
+            shuffle_index (bool): whether to shuffle the index.
+
+        Returns:
+            list: shuffled and limited list of records.
         """
         if shuffle_index:
             random.seed(42)
             random.shuffle(index)
-
         if limit is not None:
             index = index[:limit]
         return index

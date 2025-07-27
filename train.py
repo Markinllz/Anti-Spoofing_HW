@@ -26,6 +26,7 @@ def main(config):
 
     project_config = OmegaConf.to_container(config)
     logger = setup_saving_and_logging(config)
+    
     writer = instantiate(config.writer, logger, project_config)
 
     if config.trainer.device == "auto":
@@ -34,20 +35,26 @@ def main(config):
         device = config.trainer.device
 
     # setup data_loader instances
-    # batch_transforms should be put on device
     dataloaders, batch_transforms = get_dataloaders(config, device)
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
+    
+    # Подсчет параметров модели
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    
     logger.info(model)
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)
+    
     metrics = instantiate(config.metrics)
 
     # build optimizer, learning rate scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = instantiate(config.optimizer, params=trainable_params)
+    
     lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
 
     # epoch_len = number of iterations for iteration-based training

@@ -8,16 +8,14 @@ model:
   dropout_p: 0.3
 optimizer:
   _target_: torch.optim.Adam
-  lr: 1.0e-05
+  lr: 0.001
   weight_decay: 0.0001
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
-  step_size: 10
-  gamma: 0.1
+  step_size: 20
+  gamma: 0.5
 loss_function:
-  _target_: src.loss.Asoftmax.AsoftMax
-  margin: 2
-  scale: 15
+  _target_: src.loss.crossentropy.CrossEntropyLoss
 metrics:
   train:
   - _target_: src.metrics.eer.EERMetric
@@ -56,7 +54,10 @@ transforms:
   instance_transforms:
     data_object: ${transforms.stft}
   stft:
-    _target_: src.transforms.stft.AudioFrontend
+    _target_: src.transforms.stft.STFTTransform
+    n_fft: 1024
+    hop_length: 512
+    win_length: 1024
   batch_transforms:
     train:
       data_object:
@@ -80,7 +81,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: xzqp1djl
+  run_id: 8gzucarc
   run_name: inference-test
   mode: online
   loss_names:
@@ -95,7 +96,7 @@ trainer:
   save_period: 10
   val_period: 1
   skip_oom: true
-  max_grad_norm: 1.0
+  max_grad_norm: 0.5
   log_step: 50
   save_dir: checkpoints
   device_tensors:
