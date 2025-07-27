@@ -81,7 +81,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: 8gzucarc
+  run_id: j9yzgmw7
   run_name: inference-test
   mode: online
   loss_names:

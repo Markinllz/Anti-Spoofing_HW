@@ -194,6 +194,10 @@ class BaseTrainer:
         self.model.train()
         self.train_metrics.reset()
         
+        # Получаем количество батчей для определения середины эпохи
+        total_batches = len(self.train_dataloader)
+        mid_epoch_batch = total_batches // 2
+        
         pbar = tqdm(self.train_dataloader, desc=f"Train Epoch {epoch}")
         for batch_idx, batch in enumerate(pbar):
             try:
@@ -206,9 +210,18 @@ class BaseTrainer:
                     current_loss = self.train_metrics.avg(loss_key)
                     print(f"[Batch {batch_idx}] Loss: {current_loss:.6f}")
                 
-                # Валидация в середине эпохи
-                if batch_idx == len(self.train_dataloader) // 2 and "val" in self.evaluation_dataloaders:
-                    self._quick_validation(epoch, "val", self.evaluation_dataloaders["val"])
+                # Валидация в середине эпохи (если val_period = 1)
+                if batch_idx == mid_epoch_batch and "val" in self.evaluation_dataloaders:
+                    print(f"\n--- Валидация в середине эпохи {epoch} ---")
+                    val_logs = {}
+                    dataloader = self.evaluation_dataloaders["val"]
+                    val_part_logs = self._evaluation_epoch(epoch, "val", dataloader)
+                    val_logs.update(val_part_logs)
+                    
+                    # Выводим метрики в консоль
+                    for metric_name, metric_value in val_logs.items():
+                        print(f"    {metric_name}: {metric_value:.6f}")
+                    print("--- Конец валидации ---\n")
                     
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
@@ -219,39 +232,6 @@ class BaseTrainer:
                     raise e
                     
         self._log_scalars(self.train_metrics)
-
-    def _quick_validation(self, epoch, part, dataloader):
-        """
-        Быстрая валидация для отображения EER в середине эпохи.
-
-        Args:
-            epoch (int): Current epoch number.
-            part (str): Name of the data part.
-            dataloader (DataLoader): Dataloader for validation.
-        """
-        self.model.eval()
-        temp_metrics = MetricTracker(
-            *self.config.writer.loss_names,
-            *[m.name for m in self.metrics["inference"]],
-            writer=None,  # Не логируем в writer для быстрой валидации
-        )
-        
-        with torch.no_grad():
-            # Обрабатываем только первые несколько батчей для быстрой оценки
-            num_batches = min(10, len(dataloader))  # Максимум 10 батчей
-            for batch_idx, batch in enumerate(dataloader):
-                if batch_idx >= num_batches:
-                    break
-                    
-                try:
-                    batch = self.process_batch(batch, temp_metrics)
-                except RuntimeError as e:
-                    if "out of memory" in str(e) and self.skip_oom:
-                        if hasattr(torch.cuda, 'empty_cache'):
-                            torch.cuda.empty_cache()
-                        continue
-                    else:
-                        raise e
 
     def _evaluation_epoch(self, epoch, part, dataloader):
         """

@@ -50,24 +50,51 @@ class MetricTracker:
         self._eer_labels.extend(labels.detach().cpu().numpy())
 
     def compute_eer(self):
-
+        """
+        Compute Equal Error Rate from accumulated scores and labels.
+        """
         if not self._eer_scores:
             return 0.0
         
         scores = np.array(self._eer_scores)
         labels = np.array(self._eer_labels)
         
-        bona_scores = scores[labels == 1]
-        spoof_scores = scores[labels == 0]
+        # Получаем уникальные пороги
+        thresholds = np.unique(scores)
         
-        if len(bona_scores) == 0 or len(spoof_scores) == 0:
-            return 0.0
+        # Вычисляем FAR и FRR для каждого порога
+        far_values = []
+        frr_values = []
         
-        # Вычисляем EER
-        from src.metrics.eer import EERMetric
-        eer_metric = EERMetric()
-        eer, _ = eer_metric.compute_eer(bona_scores, spoof_scores)
-        return eer
+        for threshold in thresholds:
+            # Предсказания: 1 если score >= threshold, иначе 0
+            predictions = (scores >= threshold).astype(int)
+            
+            # Вычисляем confusion matrix
+            tp = np.sum((predictions == 1) & (labels == 1))
+            tn = np.sum((predictions == 0) & (labels == 0))
+            fp = np.sum((predictions == 1) & (labels == 0))
+            fn = np.sum((predictions == 0) & (labels == 1))
+            
+            # Вычисляем FAR и FRR
+            far = fp / (fp + tn) if (fp + tn) > 0 else 0
+            frr = fn / (fn + tp) if (fn + tp) > 0 else 0
+            
+            far_values.append(far)
+            frr_values.append(frr)
+        
+        # Находим точку, где FAR ≈ FRR
+        far_values = np.array(far_values)
+        frr_values = np.array(frr_values)
+        
+        # Находим индекс, где разность минимальна
+        diff = np.abs(far_values - frr_values)
+        min_idx = np.argmin(diff)
+        
+        # EER - это среднее FAR и FRR в этой точке
+        eer = (far_values[min_idx] + frr_values[min_idx]) / 2
+        
+        return float(eer)
 
     def avg(self, key):
         """
