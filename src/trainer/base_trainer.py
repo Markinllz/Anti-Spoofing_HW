@@ -213,6 +213,14 @@ class BaseTrainer:
                 # Валидация в середине эпохи (если val_period = 1)
                 if batch_idx == mid_epoch_batch and "val" in self.evaluation_dataloaders:
                     print(f"\n--- Валидация в середине эпохи {epoch} ---")
+                    
+                    # Сохраняем текущий режим
+                    was_training = self.is_train
+                    
+                    # Устанавливаем режим валидации
+                    self.is_train = False
+                    self.model.eval()
+                    
                     val_logs = {}
                     dataloader = self.evaluation_dataloaders["val"]
                     val_part_logs = self._evaluation_epoch(epoch, "val", dataloader)
@@ -222,6 +230,10 @@ class BaseTrainer:
                     for metric_name, metric_value in val_logs.items():
                         print(f"    {metric_name}: {metric_value:.6f}")
                     print("--- Конец валидации ---\n")
+                    
+                    # Возвращаем режим обучения
+                    self.is_train = True
+                    self.model.train()
                     
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
@@ -245,6 +257,8 @@ class BaseTrainer:
         Returns:
             dict: Dictionary with validation logs.
         """
+        # Устанавливаем режим валидации
+        self.is_train = False
         self.model.eval()
         self.evaluation_metrics.reset()
         
@@ -263,6 +277,8 @@ class BaseTrainer:
                     else:
                         raise e
 
+        # Возвращаем режим обучения
+        self.is_train = True
         self._log_scalars(self.evaluation_metrics)
         return self.evaluation_metrics.result()
 

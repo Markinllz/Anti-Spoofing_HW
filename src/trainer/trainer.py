@@ -40,6 +40,7 @@ class Trainer(BaseTrainer):
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
 
+        # Выполняем backward только в режиме обучения
         if self.is_train:
             batch["loss"].backward()
             self._clip_grad_norm()
