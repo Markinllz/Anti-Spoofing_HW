@@ -212,8 +212,6 @@ class BaseTrainer:
                 
                 # Валидация в середине эпохи (если val_period = 1)
                 if batch_idx == mid_epoch_batch and "val" in self.evaluation_dataloaders:
-                    print(f"\n--- Валидация в середине эпохи {epoch} ---")
-                    
                     # Сохраняем текущий режим
                     was_training = self.is_train
                     
@@ -221,15 +219,20 @@ class BaseTrainer:
                     self.is_train = False
                     self.model.eval()
                     
+                    # Создаем временный MetricTracker для валидации в середине эпохи
+                    mid_epoch_metrics = MetricTracker(
+                        *self.config.writer.loss_names,
+                        *[m.name for m in self.metrics["inference"]],
+                        writer=self.writer,
+                    )
+                    
                     val_logs = {}
                     dataloader = self.evaluation_dataloaders["val"]
                     val_part_logs = self._evaluation_epoch(epoch, "val", dataloader)
                     val_logs.update(val_part_logs)
                     
-                    # Выводим метрики в консоль
-                    for metric_name, metric_value in val_logs.items():
-                        print(f"    {metric_name}: {metric_value:.6f}")
-                    print("--- Конец валидации ---\n")
+                    # Логируем метрики валидации в середине эпохи
+                    self._log_scalars(self.evaluation_metrics)
                     
                     # Возвращаем режим обучения
                     self.is_train = True
@@ -410,7 +413,15 @@ class BaseTrainer:
             metric_tracker (MetricTracker): Metric tracker.
         """
         for metric_name, metric_value in metric_tracker.result().items():
-            self.writer.add_scalar(metric_name, metric_value)
+            # Добавляем префикс в зависимости от типа метрик
+            if metric_tracker == self.train_metrics:
+                log_name = f"train_{metric_name}"
+            elif metric_tracker == self.evaluation_metrics:
+                log_name = f"val_{metric_name}"
+            else:
+                log_name = metric_name
+                
+            self.writer.add_scalar(log_name, metric_value)
 
     def _save_checkpoint(self, epoch, save_best=False, only_best=False):
         """
