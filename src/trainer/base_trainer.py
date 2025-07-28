@@ -169,6 +169,17 @@ class BaseTrainer:
                 dataloader = self.evaluation_dataloaders["val"]
                 val_part_logs = self._evaluation_epoch(epoch, "val", dataloader)
                 val_logs.update(val_part_logs)
+                
+                # Дополнительно логируем финальные метрики валидации в конце эпохи
+                if self.writer is not None:
+                    for metric_name, metric_value in val_logs.items():
+                        self.writer.add_scalar(f"val_{metric_name}_final", metric_value, epoch)
+                
+                # Выводим финальные метрики валидации в консоль
+                print(f"    Финальная валидация эпохи {epoch}:")
+                for metric_name, metric_value in val_logs.items():
+                    print(f"        {metric_name}: {metric_value:.6f}")
+                print()
 
                 # log best so far
                 if self.mnt_mode != "off":
@@ -209,6 +220,10 @@ class BaseTrainer:
                     loss_key = self.config.writer.loss_names[0]
                     current_loss = self.train_metrics.avg(loss_key)
                     print(f"[Batch {batch_idx}] Loss: {current_loss:.6f}")
+                    
+                    # Логируем train_loss в CometML каждые 50 батчей
+                    if self.writer is not None:
+                        self.writer.add_scalar("train_loss_batch", current_loss, batch_idx)
                 
                 # Валидация в середине эпохи (если val_period = 1)
                 if batch_idx == mid_epoch_batch and "val" in self.evaluation_dataloaders:
@@ -234,6 +249,17 @@ class BaseTrainer:
                     # Логируем метрики валидации в середине эпохи
                     self._log_scalars(self.evaluation_metrics)
                     
+                    # Дополнительно логируем валидационные метрики в середине эпохи
+                    if self.writer is not None:
+                        for metric_name, metric_value in val_logs.items():
+                            self.writer.add_scalar(f"val_{metric_name}_mid_epoch", metric_value, batch_idx)
+                    
+                    # Выводим метрики валидации в консоль
+                    print(f"    Валидация в середине эпохи {epoch}:")
+                    for metric_name, metric_value in val_logs.items():
+                        print(f"        {metric_name}: {metric_value:.6f}")
+                    print()
+                    
                     # Возвращаем режим обучения
                     self.is_train = True
                     self.model.train()
@@ -247,6 +273,11 @@ class BaseTrainer:
                     raise e
                     
         self._log_scalars(self.train_metrics)
+        
+        # Дополнительно логируем финальные метрики тренировки
+        if self.writer is not None:
+            for metric_name, metric_value in self.train_metrics.result().items():
+                self.writer.add_scalar(f"train_{metric_name}_epoch", metric_value, epoch)
 
     def _evaluation_epoch(self, epoch, part, dataloader):
         """
@@ -270,7 +301,7 @@ class BaseTrainer:
             for batch_idx, batch in enumerate(pbar):
                 try:
                     batch = self.process_batch(batch, self.evaluation_metrics)
-                    self._log_batch(batch_idx, batch, part)
+                    # Убираем _log_batch чтобы не было лишних сообщений
                         
                 except RuntimeError as e:
                     if "out of memory" in str(e) and self.skip_oom:
@@ -283,6 +314,12 @@ class BaseTrainer:
         # Возвращаем режим обучения
         self.is_train = True
         self._log_scalars(self.evaluation_metrics)
+        
+        # Дополнительно логируем финальные метрики валидации
+        if self.writer is not None:
+            for metric_name, metric_value in self.evaluation_metrics.result().items():
+                self.writer.add_scalar(f"val_{metric_name}_epoch", metric_value, epoch)
+                
         return self.evaluation_metrics.result()
 
     def _monitor_performance(self, logs, not_improved_count):
