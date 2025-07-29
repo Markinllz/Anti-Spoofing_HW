@@ -46,7 +46,7 @@ def move_batch_transforms_to_device(batch_transforms, device):
                 transforms[transform_name] = transforms[transform_name].to(device)
 
 
-def get_dataloaders(config, device):
+def get_dataloaders(config, device, debug_mode=False):
     """
     Create dataloaders for each of the dataset partitions.
     Also creates instance and batch transforms.
@@ -54,6 +54,7 @@ def get_dataloaders(config, device):
     Args:
         config (DictConfig): hydra experiment config.
         device (str): device to use for batch transforms.
+        debug_mode (bool): if True, create minimal dataloaders for debugging.
     Returns:
         dataloaders (dict[DataLoader]): dict containing dataloader for a
             partition defined by key.
@@ -71,22 +72,51 @@ def get_dataloaders(config, device):
 
     # dataloaders init
     dataloaders = {}
+    debug_subset = None  # Сохраняем один subset для всех разделов
+    
     for dataset_partition in config.datasets.keys():
         dataset = datasets[dataset_partition]
+        
+        # Для отладки все разделы используют одни и те же данные из train
+        if debug_mode:
+            from torch.utils.data import Subset
+            if debug_subset is None:
+                # Создаем subset только один раз из первого датасета (обычно train)
+                debug_subset_indices = range(min(4, len(dataset)))
+                debug_subset = Subset(dataset, debug_subset_indices)
+                print(f"🔧 Debug mode: используем {len(debug_subset)} образцов для всех разделов")
+            dataset = debug_subset
 
-        assert config.dataloader.batch_size <= len(dataset), (
-            f"The batch size ({config.dataloader.batch_size}) cannot "
+        # Для отладки изменяем параметры даталоадера
+        if debug_mode:
+            batch_size = min(2, len(dataset))
+            num_workers = 0
+            pin_memory = False
+        else:
+            batch_size = config.dataloader.batch_size
+            num_workers = getattr(config.dataloader, 'num_workers', 4)
+            pin_memory = getattr(config.dataloader, 'pin_memory', True)
+
+        assert batch_size <= len(dataset), (
+            f"The batch size ({batch_size}) cannot "
             f"be larger than the dataset length ({len(dataset)})"
         )
 
         partition_dataloader = instantiate(
             config.dataloader,
             dataset=dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
             collate_fn=collate_fn,
-            drop_last=(dataset_partition == "train"),
-            shuffle=(dataset_partition == "train"),
+            drop_last=False,  # В debug режиме не отбрасываем данные
+            shuffle=False,    # В debug режиме не перемешиваем для воспроизводимости
             worker_init_fn=set_worker_seed,
         )
+        
         dataloaders[dataset_partition] = partition_dataloader
+        
+        if debug_mode:
+            print(f"📁 {dataset_partition}: {len(dataset)} образцов, batch_size={batch_size}")
 
     return dataloaders, batch_transforms

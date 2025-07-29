@@ -35,7 +35,8 @@ def main(config):
         device = config.trainer.device
 
     # setup data_loader instances
-    dataloaders, batch_transforms = get_dataloaders(config, device)
+    debug_mode = getattr(config, 'debug_mode', False)
+    dataloaders, batch_transforms = get_dataloaders(config, device, debug_mode)
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
@@ -44,7 +45,23 @@ def main(config):
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     
+    print(f"\n📊 Информация о модели:")
+    print(f"🔢 Общее количество параметров: {total_params:,}")
+    print(f"🎯 Обучаемых параметров: {trainable_params:,}")
+    print(f"📁 Размеры датасетов:")
+    for partition, dataloader in dataloaders.items():
+        print(f"    {partition}: {len(dataloader.dataset)} образцов, batch_size={dataloader.batch_size}")
+    print()
+    
     logger.info(model)
+    
+    # Логируем параметры модели в CometML
+    if writer is not None:
+        writer.exp.log_parameters({
+            "total_params": total_params,
+            "trainable_params": trainable_params,
+            "model_name": config.model._target_.split('.')[-1],
+        })
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)

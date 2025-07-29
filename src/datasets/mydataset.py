@@ -15,7 +15,7 @@ class AudioSpoofingDataset(BaseDataset):
 
     def __init__(
         self, name="train", label_path=None, audio_path=None, out_path=None, 
-        instance_transforms=None, *args, **kwargs
+        instance_transforms=None, max_samples=None, *args, **kwargs
     ):
         """
         Args:
@@ -24,17 +24,23 @@ class AudioSpoofingDataset(BaseDataset):
             audio_path (str): path to the directory with .flac files
             out_path (str): where to save index.json
             instance_transforms (dict): transforms to apply to instances
+            max_samples (int): maximum number of samples for debugging (None for all)
         """
         self.name = name
         self.label_path = label_path
         self.audio_path = audio_path
         self.out_path = out_path
+        self.max_samples = max_samples
         
         # Create index if it doesn't exist
         if Path(out_path).exists():
             index = read_json(out_path)
         else:
             index = self._create_index(label_path, audio_path, out_path)
+
+        # Ограничиваем размер датасета для отладки
+        if max_samples is not None:
+            index = index[:max_samples]
 
         super().__init__(index, instance_transforms=instance_transforms, *args, **kwargs)
 

@@ -113,3 +113,14 @@ outputs/
 .vscode/
 .idea/
 __MACOSX/
+
+# experiment checkpoints and logs
+checkpoints/training-experiment/
+checkpoints/inference-test/ 
+checkpoints/testing/
+training-experiment/
+inference-test/
+testing/
+
+# hydra outputs
+outputs/

@@ -1,6 +1,6 @@
 data_path: ${oc.env:DATA_PATH,data}
 project_name: anti-spoofing
-run_name: anti-spoofing-experiment
+run_name: baseline-experiment
 model:
   _target_: src.model.model.LCNN
   in_channels: 1
@@ -81,8 +81,8 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: kitttsun
-  run_name: inference-test
+  run_id: v1dyvkfa
+  run_name: training-experiment
   mode: online
   loss_names:
   - loss
@@ -97,12 +97,11 @@ trainer:
   val_period: 1
   skip_oom: true
   max_grad_norm: 0.5
-  log_step: 1
+  log_step: 50
   save_dir: checkpoints
   device_tensors:
   - data_object
   - labels
   monitor: min val_eer
-  early_stop: 200
+  early_stop: 20
   override: true
-debug_mode: true

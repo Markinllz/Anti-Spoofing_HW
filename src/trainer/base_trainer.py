@@ -170,16 +170,17 @@ class BaseTrainer:
                 val_part_logs = self._evaluation_epoch(epoch, "val", dataloader)
                 val_logs.update(val_part_logs)
                 
+                # Выводим финальные метрики валидации в консоль
+                print(f"\n📊 Финальные метрики валидации эпохи {epoch}:")
+                for metric_name, metric_value in val_logs.items():
+                    print(f"    val_{metric_name}: {metric_value:.6f}")
+                print()
+                
                 # Дополнительно логируем финальные метрики валидации в конце эпохи
                 if self.writer is not None:
+                    self.writer.set_step(epoch, "val")
                     for metric_name, metric_value in val_logs.items():
-                        self.writer.add_scalar(f"val_{metric_name}_final", metric_value, epoch)
-                
-                # Выводим финальные метрики валидации в консоль
-                print(f"    Финальная валидация эпохи {epoch}:")
-                for metric_name, metric_value in val_logs.items():
-                    print(f"        {metric_name}: {metric_value:.6f}")
-                print()
+                        self.writer.add_scalar(f"val_{metric_name}_epoch", metric_value)
 
                 # log best so far
                 if self.mnt_mode != "off":
@@ -215,24 +216,34 @@ class BaseTrainer:
                 batch = self.process_batch(batch, self.train_metrics)
                 self._log_batch(batch_idx, batch, "train")
                 
-                # Выводим лосс в консоль каждые 50 батчей
-                if batch_idx % 50 == 0:
+                # Выводим лосс в консоль каждые log_step батчей
+                if batch_idx % self.log_step == 0:
                     loss_key = self.config.writer.loss_names[0]
                     current_loss = self.train_metrics.avg(loss_key)
-                    print(f"[Batch {batch_idx}] Loss: {current_loss:.6f}")
+                    current_eer = self.train_metrics.avg("eer") if self.train_metrics._eer_scores else 0.0
                     
-                    # Логируем train_loss в CometML каждые 50 батчей
+                    print(f"[Epoch {epoch}, Batch {batch_idx}] Loss: {current_loss:.6f}, EER: {current_eer:.6f}")
+                    
+                    # Логируем метрики в CometML каждые log_step батчей
                     if self.writer is not None:
-                        self.writer.add_scalar("train_loss_batch", current_loss, batch_idx)
+                        # Вычисляем общий шаг как epoch * num_batches + batch_idx
+                        global_step = (epoch - 1) * len(self.train_dataloader) + batch_idx
+                        self.writer.set_step(global_step, "train")
+                        self.writer.add_scalar("train_loss_batch", current_loss)
+                        if self.train_metrics._eer_scores:
+                            self.writer.add_scalar("train_eer_batch", current_eer)
                 
                 # Валидация в середине эпохи (если val_period = 1)
                 if batch_idx == mid_epoch_batch and "val" in self.evaluation_dataloaders:
                     # Сохраняем текущий режим
                     was_training = self.is_train
+                    was_model_training = self.model.training
                     
-                    # Устанавливаем режим валидации
-                    self.is_train = False
-                    self.model.eval()
+                    # В debug режиме пропускаем валидацию в середине эпохи для упрощения
+                    debug_mode = getattr(self.config, 'debug_mode', False)
+                    if debug_mode:
+                        print("🔧 Debug mode: пропускаем валидацию в середине эпохи")
+                        continue
                     
                     # Создаем временный MetricTracker для валидации в середине эпохи
                     mid_epoch_metrics = MetricTracker(
@@ -251,8 +262,9 @@ class BaseTrainer:
                     
                     # Дополнительно логируем валидационные метрики в середине эпохи
                     if self.writer is not None:
+                        self.writer.set_step(batch_idx, "val")
                         for metric_name, metric_value in val_logs.items():
-                            self.writer.add_scalar(f"val_{metric_name}_mid_epoch", metric_value, batch_idx)
+                            self.writer.add_scalar(f"val_{metric_name}_mid_epoch", metric_value)
                     
                     # Выводим метрики валидации в консоль
                     print(f"    Валидация в середине эпохи {epoch}:")
@@ -261,8 +273,8 @@ class BaseTrainer:
                     print()
                     
                     # Возвращаем режим обучения
-                    self.is_train = True
-                    self.model.train()
+                    self.is_train = was_training
+                    self.model.train(was_model_training)
                     
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
@@ -275,9 +287,15 @@ class BaseTrainer:
         self._log_scalars(self.train_metrics)
         
         # Дополнительно логируем финальные метрики тренировки
+        train_results = self.train_metrics.result()
+        print(f"\n📊 Финальные метрики тренировки эпохи {epoch}:")
+        for metric_name, metric_value in train_results.items():
+            print(f"    train_{metric_name}: {metric_value:.6f}")
+        
         if self.writer is not None:
-            for metric_name, metric_value in self.train_metrics.result().items():
-                self.writer.add_scalar(f"train_{metric_name}_epoch", metric_value, epoch)
+            self.writer.set_step(epoch, "train")
+            for metric_name, metric_value in train_results.items():
+                self.writer.add_scalar(f"train_{metric_name}_epoch", metric_value)
 
     def _evaluation_epoch(self, epoch, part, dataloader):
         """
@@ -291,12 +309,26 @@ class BaseTrainer:
         Returns:
             dict: Dictionary with validation logs.
         """
-        # Устанавливаем режим валидации
-        self.is_train = False
-        self.model.eval()
+        # Проверяем, включен ли debug_mode (One Batch Test)
+        debug_mode = getattr(self.config, 'debug_mode', False)
+        
+        if debug_mode:
+            # В режиме отладки валидация тоже должна "обучаться" для переобучения
+            print(f"🔧 Debug mode: валидация в режиме обучения для переобучения")
+            self.is_train = True  # Оставляем в режиме обучения
+            self.model.train()    # Модель в режиме обучения
+            use_gradients = True  # Разрешаем градиенты
+        else:
+            # Обычный режим валидации
+            self.is_train = False
+            self.model.eval()
+            use_gradients = False
+        
         self.evaluation_metrics.reset()
         
-        with torch.no_grad():
+        context_manager = torch.no_grad() if not use_gradients else torch.enable_grad()
+        
+        with context_manager:
             pbar = tqdm(dataloader, desc=f"Validation {part} Epoch {epoch}")
             for batch_idx, batch in enumerate(pbar):
                 try:
@@ -311,14 +343,12 @@ class BaseTrainer:
                     else:
                         raise e
 
-        # Возвращаем режим обучения
-        self.is_train = True
-        self._log_scalars(self.evaluation_metrics)
+        # Возвращаем режим обучения (если не debug)
+        if not debug_mode:
+            self.is_train = True
         
-        # Дополнительно логируем финальные метрики валидации
-        if self.writer is not None:
-            for metric_name, metric_value in self.evaluation_metrics.result().items():
-                self.writer.add_scalar(f"val_{metric_name}_epoch", metric_value, epoch)
+        # Логируем метрики валидации (основной способ)
+        self._log_scalars(self.evaluation_metrics)
                 
         return self.evaluation_metrics.result()
 
@@ -449,6 +479,9 @@ class BaseTrainer:
         Args:
             metric_tracker (MetricTracker): Metric tracker.
         """
+        if self.writer is None:
+            return
+            
         for metric_name, metric_value in metric_tracker.result().items():
             # Добавляем префикс в зависимости от типа метрик
             if metric_tracker == self.train_metrics:

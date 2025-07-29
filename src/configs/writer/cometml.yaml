@@ -2,7 +2,7 @@ _target_: src.logger.cometml.CometMLWriter
 project_name: "anti-spoofing"
 workspace: null
 run_id: null
-run_name: "inference-test"
+run_name: "training-experiment"
 mode: "online"
 loss_names: ["loss"]
 log_checkpoints: False

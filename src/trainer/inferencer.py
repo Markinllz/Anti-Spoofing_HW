@@ -60,14 +60,14 @@ class Inferencer(BaseTrainer):
         self.model = model
         self.batch_transforms = batch_transforms
 
-        # define dataloaders
+       
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
 
-        # path definition
+      
 
         self.save_path = save_path
 
-        # define metrics
+      
         self.metrics = metrics
         self.writer = writer
         if self.metrics is not None:
@@ -79,7 +79,7 @@ class Inferencer(BaseTrainer):
             self.evaluation_metrics = None
 
         if not skip_model_load:
-            # init model
+           
             self._from_pretrained(config.inferencer.get("from_pretrained"))
 
     def run_inference(self):
@@ -128,15 +128,13 @@ class Inferencer(BaseTrainer):
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
 
-        # Some saving logic. This is an example
-        # Use if you need to save predictions on disk
+    
 
         batch_size = batch["logits"].shape[0]
         current_id = batch_idx * batch_size
 
         for i in range(batch_size):
-            # clone because of
-            # https://github.com/pytorch/pytorch/issues/1995
+         
             logits = batch["logits"][i].clone()
             label = batch["labels"][i].clone()
             pred_label = logits.argmax(dim=-1)
@@ -149,7 +147,7 @@ class Inferencer(BaseTrainer):
             }
 
             if self.save_path is not None:
-                # you can use safetensors or other lib here
+             
                 torch.save(output, self.save_path / part / f"output_{output_id}.pth")
 
         return batch
@@ -189,7 +187,7 @@ class Inferencer(BaseTrainer):
 
         results = self.evaluation_metrics.result()
         
-        # Логируем финальные метрики в CometML
+      
         if self.writer is not None:
             for metric_name, metric_value in results.items():
                 self.writer.add_scalar(f"inference_{part}_{metric_name}", metric_value, 0)
