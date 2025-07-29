@@ -417,10 +417,8 @@ class BaseTrainer:
         """
         Clip gradient norm.
         """
-        if self.cfg_trainer.get("grad_clip_norm") is not None:
-            clip_grad_norm_(
-                self.model.parameters(), self.cfg_trainer.grad_clip_norm
-            )
+        if self.cfg_trainer.get("max_grad_norm") is not None:
+            clip_grad_norm_(self.model.parameters(), self.cfg_trainer.max_grad_norm)
 
     @torch.no_grad()
     def _get_grad_norm(self, norm_type=2):
@@ -514,7 +512,7 @@ class BaseTrainer:
         }
 
         if self.lr_scheduler is not None:
-            state["lr_scheduler"] = self.lr_scheduler.state_dict()
+            self.lr_scheduler.step()  # ← ЭТО НЕПРАВИЛЬНО!
 
         filename = str(self.checkpoint_dir / "checkpoint-epoch{}.pth".format(epoch))
         if not (self.checkpoint_dir).exists():
