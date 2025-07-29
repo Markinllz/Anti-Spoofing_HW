@@ -297,6 +297,18 @@ class BaseTrainer:
             for metric_name, metric_value in train_results.items():
                 self.writer.add_scalar(f"train_{metric_name}_epoch", metric_value)
 
+        # ИСПРАВЛЕНИЕ: LR scheduler вызывается в конце эпохи!
+        if self.lr_scheduler is not None:
+            old_lr = self.lr_scheduler.get_last_lr()[0]
+            self.lr_scheduler.step()
+            new_lr = self.lr_scheduler.get_last_lr()[0]
+            if old_lr != new_lr:
+                print(f"📉 Learning Rate изменен: {old_lr:.6f} → {new_lr:.6f}")
+            
+            # Логируем LR в CometML
+            if self.writer is not None:
+                self.writer.add_scalar("learning_rate_epoch", new_lr)
+
     def _evaluation_epoch(self, epoch, part, dataloader):
         """
         Validate after training an epoch.
@@ -417,8 +429,10 @@ class BaseTrainer:
         """
         Clip gradient norm.
         """
-        if self.cfg_trainer.get("max_grad_norm") is not None:
-            clip_grad_norm_(self.model.parameters(), self.cfg_trainer.max_grad_norm)
+        # Проверяем оба возможных имени параметра
+        grad_norm = self.cfg_trainer.get("max_grad_norm") or self.cfg_trainer.get("grad_clip_norm")
+        if grad_norm is not None:
+            clip_grad_norm_(self.model.parameters(), grad_norm)
 
     @torch.no_grad()
     def _get_grad_norm(self, norm_type=2):

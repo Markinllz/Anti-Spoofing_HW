@@ -43,10 +43,11 @@ class Trainer(BaseTrainer):
         # Выполняем backward только в режиме обучения
         if self.is_train:
             batch["loss"].backward()
-            self._clip_grad_norm()
+            self._clip_grad_norm()  # Включено обратно после исправления
             self.optimizer.step()
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
+            # LR scheduler вызывается в конце эпохи, НЕ здесь!
+            # if self.lr_scheduler is not None:
+            #     self.lr_scheduler.step()
 
         # Обновляем loss метрики
         for loss_name in self.config.writer.loss_names:
