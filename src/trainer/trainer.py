@@ -55,8 +55,9 @@ class Trainer(BaseTrainer):
 
         # Обновляем EER метрику
         if "logits" in batch:
-            scores = torch.softmax(batch["logits"], dim=1)[:, 1]
+            logits = batch["logits"]
             labels = batch["labels"]
+            scores = torch.softmax(logits, dim=1)[:, 1]
             metrics.update_eer(scores, labels)
 
         # Обновляем остальные метрики

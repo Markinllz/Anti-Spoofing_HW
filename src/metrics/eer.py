@@ -16,15 +16,7 @@ class EERMetric(BaseMetric):
             **kwargs: additional arguments
         """
         super(EERMetric, self).__init__()
-        
-        print("📈 Инициализация EERMetric...")
-        
-        # Логируем параметры
-        for key, value in kwargs.items():
-            print(f"   📊 {key}: {value}")
-        
         self.name = "eer"
-        print("✅ EERMetric инициализирован")
 
     def forward(self, **batch) -> float:
         """
@@ -36,13 +28,6 @@ class EERMetric(BaseMetric):
         Returns:
             float: EER value
         """
-        # Логируем входные данные (только для отладки)
-        if hasattr(self, '_debug_forward') and self._debug_forward:
-            print(f"   📈 EERMetric forward: входные ключи {list(batch.keys())}")
-            for key, value in batch.items():
-                if isinstance(value, torch.Tensor):
-                    print(f"      {key}: shape={value.shape}, dtype={value.dtype}")
-        
         # Получаем scores и labels
         if 'scores' in batch:
             scores = batch['scores']
@@ -51,22 +36,12 @@ class EERMetric(BaseMetric):
             logits = batch['logits']
             scores = torch.softmax(logits, dim=1)[:, 1]
         else:
-            print("❌ Ошибка: не найдены scores или logits в батче")
             return 0.0
         
         labels = batch['labels']
         
-        # Логируем размеры
-        if hasattr(self, '_debug_forward') and self._debug_forward:
-            print(f"   📊 Scores: shape={scores.shape}, range=[{scores.min().item():.4f}, {scores.max().item():.4f}]")
-            print(f"   📊 Labels: shape={labels.shape}, unique={torch.unique(labels).tolist()}")
-        
         # Вычисляем EER
         eer = self._compute_eer(scores, labels)
-        
-        # Логируем результат
-        if hasattr(self, '_debug_forward') and self._debug_forward:
-            print(f"   📈 EER: {eer:.4f}")
         
         return eer
 
@@ -124,15 +99,3 @@ class EERMetric(BaseMetric):
         eer = (far_values[min_idx] + frr_values[min_idx]) / 2
         
         return float(eer)
-
-    def set_debug_mode(self, debug_forward=False):
-        """
-        Включает режим отладки для логирования forward pass.
-        
-        Args:
-            debug_forward (bool): логировать forward pass
-        """
-        self._debug_forward = debug_forward
-        if debug_forward:
-            print(f"🐛 Режим отладки включен для {self.__class__.__name__}")
-            print(f"   📈 Debug forward: {debug_forward}")

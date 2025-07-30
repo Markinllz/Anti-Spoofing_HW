@@ -56,6 +56,23 @@ class LCNN(nn.Module):
             nn.Dropout(0.5),
             nn.Linear(256, num_classes)
         )
+        
+        # ДОБАВЛЯЕМ ПРАВИЛЬНУЮ ИНИЦИАЛИЗАЦИЮ ВЕСОВ
+        self._init_weights()
+
+    def _init_weights(self):
+        """Инициализация весов модели"""
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, **batch) -> Dict[str, torch.Tensor]:
         """

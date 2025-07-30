@@ -45,12 +45,12 @@ def main(config):
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     
-    print(f"\n📊 Информация о модели:")
-    print(f"🔢 Общее количество параметров: {total_params:,}")
-    print(f"🎯 Обучаемых параметров: {trainable_params:,}")
-    print(f"📁 Размеры датасетов:")
+    print(f"\nModel information:")
+    print(f"Total parameters: {total_params:,}")
+    print(f"Trainable parameters: {trainable_params:,}")
+    print(f"Dataset sizes:")
     for partition, dataloader in dataloaders.items():
-        print(f"    {partition}: {len(dataloader.dataset)} образцов, batch_size={dataloader.batch_size}")
+        print(f"    {partition}: {len(dataloader.dataset)} samples, batch_size={dataloader.batch_size}")
     print()
     
     logger.info(model)

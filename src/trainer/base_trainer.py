@@ -144,57 +144,66 @@ class BaseTrainer:
 
     def train(self):
         """
-        Wrapper around training process to save model on keyboard interrupt.
+        Full training logic
         """
-        try:
-            self._train_process()
-        except KeyboardInterrupt:
-            self._save_checkpoint(self._last_epoch, save_best=False, only_best=True)
-            raise
-        except Exception as e:
-            raise
-
-    def _train_process(self):
-        """
-        Full training logic.
-        """
-        not_improved_count = 0
-        for epoch in range(self.start_epoch, self.epochs + 1):
+        self.logger.info("Starting training...")
+        early_stop_count = 0
+        for epoch in range(self._last_epoch, self.epochs):
             self._last_epoch = epoch
-            self._train_epoch(epoch)
+            result = self._train_epoch(epoch)
 
-            # Валидируем только на val, test оставляем для инференса
-            if "val" in self.evaluation_dataloaders:
-                val_logs = {}
-                dataloader = self.evaluation_dataloaders["val"]
-                val_part_logs = self._evaluation_epoch(epoch, "val", dataloader)
-                val_logs.update(val_part_logs)
+            # save logged informations into log dict
+            log = {"epoch": epoch}
+            log.update(result)
+
+            # print logged informations to the screen
+            for key, value in log.items():
+                self.logger.info(f"{str(key):15s}: {value}")
+
+            # evaluate model performance according to configured metric,
+            # save best checkpoint as model_best
+            not_improved_count = self._monitor_performance(result, not_improved_count=early_stop_count)
+            early_stop_count = not_improved_count
+
+            best_ckpt_path = str(self.checkpoint_dir / "model_best.pth")
+            
+            if self.mnt_mode != "off":
+                self.logger.info(f"Monitoring metric: {self.mnt_metric}")
+                self.logger.info(f"Best value: {self.mnt_best:.6f}")
+                self.logger.info(f"Best checkpoint: {best_ckpt_path}")
                 
-                # Выводим финальные метрики валидации в консоль
-                print(f"\n📊 Финальные метрики валидации эпохи {epoch}:")
-                for metric_name, metric_value in val_logs.items():
-                    print(f"    val_{metric_name}: {metric_value:.6f}")
-                print()
-                
-                # Дополнительно логируем финальные метрики валидации в конце эпохи
-                if self.writer is not None:
-                    self.writer.set_step(epoch, "val")
-                    for metric_name, metric_value in val_logs.items():
-                        self.writer.add_scalar(f"val_{metric_name}_epoch", metric_value)
+            # check whether to stop early
+            if early_stop_count >= self.early_stop:
+                self.logger.info(f"Early stopping at epoch {epoch + 1}")
+                break
 
-                # log best so far
-                if self.mnt_mode != "off":
-                    improved = self._monitor_performance(val_logs, not_improved_count)
-                    if improved:
-                        not_improved_count = 0
-                    else:
-                        not_improved_count += 1
+            # check whether to evaluate on validation set mid-epoch
+            if self.cfg_trainer.get("val_period") is not None and (epoch + 1) % self.cfg_trainer.val_period == 0:
+                # Проверяем debug mode
+                debug_mode = getattr(self.config, 'debug_mode', False)
+                if debug_mode:
+                    print("Debug mode: skipping mid-epoch validation")
+                else:
+                    for part, dataloader in self.evaluation_dataloaders.items():
+                        val_log = self._evaluation_epoch(epoch, part, dataloader)
+                        log.update(**{f"val_{part}_{k}": v for k, v in val_log.items()})
 
-                if self.mnt_mode != "off" and not_improved_count > self.early_stop:
-                    break
-
+            # save model checkpoint every save_period epochs
             if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, save_best=False)
+                self._save_checkpoint(epoch)
+
+        # Final evaluation on all partitions after training
+        log = {}
+        for part, dataloader in self.evaluation_dataloaders.items():
+            val_log = self._evaluation_epoch(self._last_epoch, part, dataloader)
+            log.update(**{f"val_{part}_{k}": v for k, v in val_log.items()})
+
+        log = {**log}
+
+        # print final results to the screen
+        print(f"\nFinal training metrics epoch {self._last_epoch}:")
+        for key, value in result.items():
+            print(f"    {key}: {value:.6f}")
 
     def _train_epoch(self, epoch):
         """
@@ -242,7 +251,7 @@ class BaseTrainer:
                     # В debug режиме пропускаем валидацию в середине эпохи для упрощения
                     debug_mode = getattr(self.config, 'debug_mode', False)
                     if debug_mode:
-                        print("🔧 Debug mode: пропускаем валидацию в середине эпохи")
+                        print("Debug mode: skipping mid-epoch validation")
                         continue
                     
                     # Создаем временный MetricTracker для валидации в середине эпохи
@@ -288,7 +297,7 @@ class BaseTrainer:
         
         # Дополнительно логируем финальные метрики тренировки
         train_results = self.train_metrics.result()
-        print(f"\n📊 Финальные метрики тренировки эпохи {epoch}:")
+        print(f"\nTraining metrics epoch {epoch}:")
         for metric_name, metric_value in train_results.items():
             print(f"    train_{metric_name}: {metric_value:.6f}")
         
@@ -303,7 +312,7 @@ class BaseTrainer:
             self.lr_scheduler.step()
             new_lr = self.lr_scheduler.get_last_lr()[0]
             if old_lr != new_lr:
-                print(f"📉 Learning Rate изменен: {old_lr:.6f} → {new_lr:.6f}")
+                print(f"Learning Rate: {old_lr:.6f} -> {new_lr:.6f}")
             
             # Логируем LR в CometML
             if self.writer is not None:
@@ -326,7 +335,7 @@ class BaseTrainer:
         
         if debug_mode:
             # В режиме отладки валидация тоже должна "обучаться" для переобучения
-            print(f"🔧 Debug mode: валидация в режиме обучения для переобучения")
+            print("Debug mode: validation in training mode for overfitting")
             self.is_train = True  # Оставляем в режиме обучения
             self.model.train()    # Модель в режиме обучения
             use_gradients = True  # Разрешаем градиенты

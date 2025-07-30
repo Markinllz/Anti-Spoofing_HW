@@ -84,7 +84,7 @@ def get_dataloaders(config, device, debug_mode=False):
                 # Создаем subset только один раз из первого датасета (обычно train)
                 debug_subset_indices = range(min(4, len(dataset)))
                 debug_subset = Subset(dataset, debug_subset_indices)
-                print(f"🔧 Debug mode: используем {len(debug_subset)} образцов для всех разделов")
+                print(f"Debug mode: using {len(debug_subset)} samples for all partitions")
             dataset = debug_subset
 
         # Для отладки изменяем параметры даталоадера
