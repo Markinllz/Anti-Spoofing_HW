@@ -318,6 +318,9 @@ class BaseTrainer:
             if self.writer is not None:
                 self.writer.add_scalar("learning_rate_epoch", new_lr)
 
+        # ⬅️ Возвращаем словарь с метриками эпохи
+        return train_results
+
     def _evaluation_epoch(self, epoch, part, dataloader):
         """
         Validate after training an epoch.
