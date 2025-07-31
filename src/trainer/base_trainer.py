@@ -538,7 +538,9 @@ class BaseTrainer:
         }
 
         if self.lr_scheduler is not None:
-            self.lr_scheduler.step()  # ← ЭТО НЕПРАВИЛЬНО!
+            state["lr_scheduler"] = self.lr_scheduler.state_dict()
+
+        # НЕ двигаем lr_scheduler внутри сохранения (шаг выполнен ранее)
 
         filename = str(self.checkpoint_dir / "checkpoint-epoch{}.pth".format(epoch))
         if not (self.checkpoint_dir).exists():
@@ -547,13 +549,16 @@ class BaseTrainer:
         if save_best:
             best_path = str(self.checkpoint_dir / "model_best.pth")
             torch.save(state, best_path)
-            del state["optimizer"], state["lr_scheduler"], state["config"]
+            # Сохраняем облегчённую версию без больших объектов
+            for k in ["optimizer", "lr_scheduler", "config"]:
+                state.pop(k, None)
             torch.save(state, best_path + ".tmp")
             import os
             os.replace(best_path + ".tmp", best_path)
         elif not only_best:
             torch.save(state, filename)
-            del state["optimizer"], state["lr_scheduler"], state["config"]
+            for k in ["optimizer", "lr_scheduler", "config"]:
+                state.pop(k, None)
             torch.save(state, filename + ".tmp")
             import os
             os.replace(filename + ".tmp", filename)
