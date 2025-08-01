@@ -48,7 +48,7 @@ class STFTTransform(nn.Module):
             window=torch.hann_window(self.win_length).to(audio.device)
         )
         
-        
+
         spectrogram = torch.abs(stft_output)
         
         return spectrogram
@@ -75,7 +75,7 @@ class MelSpectrogramTransform(nn.Module):
         self.hop_length = hop_length
         self.n_mels = n_mels
         
-        # Создаем mel spectrogram transform
+
         self.mel_spectrogram = T.MelSpectrogram(
             sample_rate=sample_rate,
             n_fft=n_fft,
@@ -93,13 +93,13 @@ class MelSpectrogramTransform(nn.Module):
         Returns:
             torch.Tensor: Mel spectrogram
         """
-        # Убеждаемся, что аудио имеет правильную форму
+       
         if audio.dim() == 1:
-            audio = audio.unsqueeze(0)  # Добавляем batch dimension
+            audio = audio.unsqueeze(0)
         elif audio.dim() == 3:
-            audio = audio.squeeze(1)  # Убираем лишний канал
+            audio = audio.squeeze(1)
         
-        # Применяем Mel Spectrogram
+       
         mel_spectrogram = self.mel_spectrogram(audio)
         
         return mel_spectrogram

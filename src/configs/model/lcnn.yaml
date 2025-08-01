@@ -1,4 +1,2 @@
 _target_: src.model.model.LCNN
-in_channels: 1
-num_classes: 2
-dropout_p: 0.3 
+num_classes: 2 

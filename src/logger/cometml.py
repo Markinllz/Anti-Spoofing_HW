@@ -20,7 +20,6 @@ class CometMLWriter:
         run_id=None,
         run_name=None,
         mode="online",
-        api_key=None,
         **kwargs,
     ):
         """
@@ -41,11 +40,7 @@ class CometMLWriter:
         try:
             import comet_ml
 
-            # Если API ключ предоставлен, используем его
-            if api_key:
-                comet_ml.init(api_key=api_key)
-            else:
-                comet_ml.login()
+            comet_ml.login()
 
             self.run_id = run_id
 
@@ -59,11 +54,11 @@ class CometMLWriter:
                 else:
                     exp_class = comet_ml.ExistingExperiment
 
-                # Проверяем длину run_id перед использованием как experiment_key
+                
                 if self.run_id and len(self.run_id) >= 32:
                     self.exp = exp_class(experiment_key=self.run_id)
                 else:
-                    # Если run_id слишком короткий, создаем эксперимент без experiment_key
+                  
                     self.exp = exp_class()
             else:
                 if mode == "offline":
@@ -71,7 +66,7 @@ class CometMLWriter:
                 else:
                     exp_class = comet_ml.Experiment
 
-                # Создаем параметры для эксперимента
+             
                 exp_params = {
                     "project_name": project_name,
                     "workspace": workspace,
@@ -81,7 +76,7 @@ class CometMLWriter:
                     "auto_param_logging": kwargs.get("auto_param_logging", False),
                 }
                 
-                # Добавляем experiment_key только если run_id достаточно длинный
+              
                 if self.run_id and len(self.run_id) >= 32:
                     exp_params["experiment_key"] = self.run_id
                 

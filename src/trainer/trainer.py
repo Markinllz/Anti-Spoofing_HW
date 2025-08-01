@@ -40,33 +40,30 @@ class Trainer(BaseTrainer):
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
 
-        # Выполняем backward только в режиме обучения
         if self.is_train:
             batch["loss"].backward()
-            self._clip_grad_norm()  # Включено обратно после исправления
+            self._clip_grad_norm()
             self.optimizer.step()
-            # LR scheduler вызывается в конце эпохи, НЕ здесь!
-            # if self.lr_scheduler is not None:
-            #     self.lr_scheduler.step()
+            if self.lr_scheduler is not None:
+                self.lr_scheduler.step()
 
-        # Обновляем loss метрики
+       
         for loss_name in self.config.writer.loss_names:
             metrics.update(loss_name, batch[loss_name].item())
 
-        # Обновляем EER метрику
+        
         if "logits" in batch:
-            logits = batch["logits"]
+            scores = torch.softmax(batch["logits"], dim=1)[:, 1]
             labels = batch["labels"]
-            scores = torch.softmax(logits, dim=1)[:, 1]
             metrics.update_eer(scores, labels)
 
-        # Обновляем остальные метрики
+      
         for met in metric_funcs:
             if met.name != "eer":
                 try:
-                    metric_value = met(**batch)
-                    metrics.update(met.name, metric_value)
+                    metrics.update(met.name, met(**batch))
                 except Exception as e:
+                    print(f"Ошибка в метрике {met.name}: {e}")
                     continue
         return batch
 
@@ -75,8 +72,4 @@ class Trainer(BaseTrainer):
         Log data from batch. Calls self.writer.add_* to log data
         to the experiment tracker.
         """
-        # Логируем информацию о батче для writer
-        if self.writer is not None:
-            # Логируем learning rate
-            if mode == "train" and self.lr_scheduler is not None:
-                self.writer.add_scalar("learning_rate", self.lr_scheduler.get_last_lr()[0])
+        pass
