@@ -254,6 +254,7 @@ class BaseTrainer:
          
             if batch_idx % self.log_step == 0:
                 self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
+                print(f"  🏋️ Эпоха {epoch} {self._progress(batch_idx)} - текущий batch_loss: {batch['loss'].item():.6f}")
                 self.logger.debug(
                     "Train Epoch: {} {} Loss: {:.6f}".format(
                         epoch, self._progress(batch_idx), batch["loss"].item()
@@ -267,6 +268,17 @@ class BaseTrainer:
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
                 last_train_metrics = self.train_metrics.result()
+                
+                # Выводим текущие метрики в консоль каждые 50 батчей
+                print(f"  📊 Текущие метрики (шаг {batch_idx}):")
+                if "loss" in last_train_metrics:
+                    print(f"    train_loss: {last_train_metrics['loss']:.6f}")
+                if "eer" in last_train_metrics:
+                    print(f"    train_eer: {last_train_metrics['eer']:.6f}")
+                for metric_name, metric_value in last_train_metrics.items():
+                    if metric_name not in ["loss", "eer"]:
+                        print(f"    train_{metric_name}: {metric_value:.6f}")
+                
                 self.train_metrics.reset()
                 
             # ВАЛИДАЦИЯ В СЕРЕДИНЕ ЭПОХИ (на половине эпохи)

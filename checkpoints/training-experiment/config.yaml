@@ -3,9 +3,7 @@ project_name: anti-spoofing
 run_name: baseline-experiment
 model:
   _target_: src.model.model.LCNN
-  in_channels: 1
   num_classes: 2
-  dropout_p: 0.3
 optimizer:
   _target_: torch.optim.Adam
   lr: 0.001
@@ -81,7 +79,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: f4xa9zkq
+  run_id: nqsnxyzf
   run_name: training-experiment
   mode: online
   loss_names:
