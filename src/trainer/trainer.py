@@ -29,6 +29,8 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
+
+
         metric_funcs = self.metrics["inference"]
         if self.is_train:
             metric_funcs = self.metrics["train"]
@@ -37,8 +39,10 @@ class Trainer(BaseTrainer):
         outputs = self.model(**batch)
         batch.update(outputs)
 
+
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
+
 
         if self.is_train:
             batch["loss"].backward()
@@ -55,6 +59,7 @@ class Trainer(BaseTrainer):
         if "logits" in batch:
             scores = torch.softmax(batch["logits"], dim=1)[:, 1]
             labels = batch["labels"]
+            
             metrics.update_eer(scores, labels)
 
       

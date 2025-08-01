@@ -83,6 +83,7 @@ class AudioSpoofingDataset(BaseDataset):
         except Exception as e:
             # Return zero tensor as fallback
             fallback_waveform = torch.zeros(1, 16000)  # 1 second of silence at 16kHz
+            print(f"⚠️ Ошибка загрузки аудио {audio_path}: {e}")
             return {
                 "data_object": fallback_waveform,
                 "labels": label
@@ -133,5 +134,13 @@ class AudioSpoofingDataset(BaseDataset):
                     spoof_count += 1
         
         write_json(index, out_path)
+        
+        # Выводим статистику датасета
+        total_samples = len(index)
+        print(f"\n📊 Статистика датасета '{self.name}':")
+        print(f"   📁 Всего файлов: {total_samples}")
+        print(f"   ✅ Bonafide (класс 0): {bonafide_count} ({100*bonafide_count/total_samples:.1f}%)")
+        print(f"   ❌ Spoof (класс 1): {spoof_count} ({100*spoof_count/total_samples:.1f}%)")
+        print(f"   ⚖️ Соотношение spoof/bonafide: {spoof_count/bonafide_count:.2f}")
 
         return index

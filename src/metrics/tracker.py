@@ -59,6 +59,7 @@ class MetricTracker:
         scores = np.array(self._eer_scores)
         labels = np.array(self._eer_labels)
         
+
         # Получаем уникальные пороги
         thresholds = np.unique(scores)
         

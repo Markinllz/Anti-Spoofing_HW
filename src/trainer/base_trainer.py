@@ -297,9 +297,14 @@ class BaseTrainer:
                 break
 
         train_results = last_train_metrics
-        print(f"\nTraining metrics epoch {epoch}:")
+        print(f"\n🏋️ Тренировочные метрики эпохи {epoch}:")
+        # Выводим loss первым, потом остальные метрики
+        if "loss" in train_results:
+            print(f"    train_loss: {train_results['loss']:.6f}")
         for metric_name, metric_value in train_results.items():
-            print(f"    train_{metric_name}: {metric_value:.6f}")
+            if metric_name != "loss":  # loss уже вывели
+                print(f"    train_{metric_name}: {metric_value:.6f}")
+        print(f"   ✅ Эпоха обучения завершена")
         
         if self.writer is not None:
             self.writer.set_step(epoch, "train")
@@ -369,15 +374,24 @@ class BaseTrainer:
         print(f"\n📊 Валидация {validation_type} {epoch}{step_info}:")
         
         val_dataloader = self.evaluation_dataloaders["val"]
+        print(f"   📂 Количество валидационных батчей: {len(val_dataloader)}")
+        
         val_results = self._evaluation_epoch(epoch, "val", val_dataloader)
         
         # Выводим метрики валидации в консоль
         if is_final:
-            print(f"Финальные результаты валидации:")
+            print(f"🎯 Финальные результаты валидации:")
         else:
-            print(f"Результаты валидации эпохи {epoch}{step_info}:")
+            print(f"📊 Результаты валидации эпохи {epoch}{step_info}:")
+        
+        # Выводим loss первым, потом остальные метрики
+        if "loss" in val_results:
+            print(f"    val_loss: {val_results['loss']:.6f}")
         for metric_name, metric_value in val_results.items():
-            print(f"    val_{metric_name}: {metric_value:.6f}")
+            if metric_name != "loss":  # loss уже вывели
+                print(f"    val_{metric_name}: {metric_value:.6f}")
+        
+        print(f"   ✅ Валидация завершена")
         
         # Логируем в writer с правильными префиксами
         if self.writer is not None:
