@@ -80,8 +80,3 @@ class Trainer(BaseTrainer):
             # Логируем learning rate
             if mode == "train" and self.lr_scheduler is not None:
                 self.writer.add_scalar("learning_rate", self.lr_scheduler.get_last_lr()[0])
-            
-            # Логируем градиентную норму
-            if mode == "train":
-                grad_norm = self._get_grad_norm()
-                self.writer.add_scalar("grad_norm", grad_norm)

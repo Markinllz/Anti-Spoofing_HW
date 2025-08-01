@@ -83,8 +83,11 @@ class BaseTrainer:
             self.epoch_len = epoch_len
 
         self.evaluation_dataloaders = {
-            k: v for k, v in dataloaders.items() if k != "train"
+            k: v for k, v in dataloaders.items() if k == "val"  # ТОЛЬКО val, НЕ test!
         }
+        
+        # test dataloader отдельно - только для финального inference
+        self.test_dataloader = dataloaders.get("test", None)
 
         # define epochs
         self._last_epoch = 0  # required for saving on interruption
@@ -119,7 +122,6 @@ class BaseTrainer:
         self.metrics = metrics
         self.train_metrics = MetricTracker(
             *self.config.writer.loss_names,
-            "grad_norm",
             *[m.name for m in self.metrics["train"]],
             writer=self.writer,
         )
@@ -160,9 +162,33 @@ class BaseTrainer:
             for key, value in log.items():
                 self.logger.info(f"{str(key):15s}: {value}")
 
-            # evaluate model performance according to configured metric,
-            # save best checkpoint as model_best
-            not_improved_count = self._monitor_performance(result, not_improved_count=early_stop_count)
+            # ВАЛИДАЦИЯ В КОНЦЕ КАЖДОЙ ЭПОХИ
+            val_log = {}
+            if "val" in self.evaluation_dataloaders:
+                print(f"\n📊 Валидация в конце эпохи {epoch}:")
+                val_dataloader = self.evaluation_dataloaders["val"]
+                val_results = self._evaluation_epoch(epoch, "val", val_dataloader)
+                
+                # НЕ добавляем префикс val_ здесь, он уже есть в конфиге monitor
+                val_log = {f"val_{k}": v for k, v in val_results.items()}
+                
+                # Выводим метрики валидации в консоль (как в середине эпохи)
+                print(f"Результаты валидации эпохи {epoch}:")
+                for metric_name, metric_value in val_results.items():
+                    print(f"    val_{metric_name}: {metric_value:.6f}")
+                
+                # Логируем в writer (как в середине эпохи)
+                if self.writer is not None:
+                    self.writer.set_step(epoch, "val")
+                    for metric_name, metric_value in val_results.items():
+                        self.writer.add_scalar(f"val_{metric_name}_epoch", metric_value)
+                
+                # Добавляем валидационные метрики в log с префиксом для логгера
+                log.update(val_log)
+
+            # evaluate model performance according to configured metric
+            # ИСПОЛЬЗУЕМ ВАЛИДАЦИОННЫЕ МЕТРИКИ для model selection!
+            not_improved_count = self._monitor_performance(val_log if val_log else result, not_improved_count=early_stop_count)
             early_stop_count = not_improved_count
 
             best_ckpt_path = str(self.checkpoint_dir / "model_best.pth")
@@ -192,18 +218,32 @@ class BaseTrainer:
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch)
 
-        # Final evaluation on all partitions after training
-        log = {}
-        for part, dataloader in self.evaluation_dataloaders.items():
-            val_log = self._evaluation_epoch(self._last_epoch, part, dataloader)
-            log.update(**{f"val_{part}_{k}": v for k, v in val_log.items()})
-
-        log = {**log}
-
-        # print final results to the screen
-        print(f"\nFinal training metrics epoch {self._last_epoch}:")
-        for key, value in result.items():
-            print(f"    {key}: {value:.6f}")
+        # Final validation только на val (НЕ test!)
+        print(f"\n📊 ФИНАЛЬНАЯ ВАЛИДАЦИЯ:")
+        final_val_results = {}
+        
+        if "val" in self.evaluation_dataloaders:
+            val_dataloader = self.evaluation_dataloaders["val"]
+            val_log = self._evaluation_epoch(self._last_epoch, "val", val_dataloader)
+            final_val_results.update(**{f"val_{k}": v for k, v in val_log.items()})
+            
+            # Логируем финальную валидацию в консоль
+            print(f"Финальные метрики валидации:")
+            for metric_name, metric_value in val_log.items():
+                print(f"    val_{metric_name}: {metric_value:.6f}")
+            
+            # Логируем финальную валидацию в writer
+            if self.writer is not None:
+                self.writer.set_step(self._last_epoch, "val")
+                for metric_name, metric_value in val_log.items():
+                    self.writer.add_scalar(f"val_{metric_name}_final", metric_value)
+        
+        # TEST ЗАПУСКАЕТСЯ ОТДЕЛЬНО - НЕ ЗДЕСЬ!
+        if self.test_dataloader is not None:
+            print(f"\n⚠️ TEST набор доступен для финального inference")
+            print(f"   Используйте inference.py для запуска теста")
+        
+        print(f"\n✅ ОБУЧЕНИЕ ЗАВЕРШЕНО!")
 
     def _train_epoch(self, epoch):
         """
