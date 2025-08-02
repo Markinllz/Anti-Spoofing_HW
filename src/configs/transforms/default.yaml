@@ -12,13 +12,20 @@ batch_transforms:
     data_object:
       _target_: torch.nn.Sequential
       _args_:
+        # Логарифмирование спектрограммы - критически важно для аудио
+        - _target_: src.transforms.stft.LogTransform
+          eps: 1e-6
+        # Нормализация логарифмированных значений
         - _target_: src.transforms.normalize.Normalize
-          mean: [0.0]
-          std: [1.0]
+          mean: [-4.0]  # Подходящее для log-спектрограмм  
+          std: [4.0]    # Подходящее стандартное отклонение
   inference:
     data_object:
       _target_: torch.nn.Sequential
       _args_:
+        # Те же трансформации для inference
+        - _target_: src.transforms.stft.LogTransform
+          eps: 1e-6
         - _target_: src.transforms.normalize.Normalize
-          mean: [0.0]
-          std: [1.0]
+          mean: [-4.0]
+          std: [4.0]

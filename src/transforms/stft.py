@@ -3,6 +3,26 @@ import torch.nn as nn
 import torchaudio.transforms as T
 
 
+class LogTransform(nn.Module):
+    """
+    Логарифмическая трансформация для спектрограмм.
+    Критически важна для аудио задач.
+    """
+    
+    def __init__(self, eps=1e-6):
+        super(LogTransform, self).__init__()
+        self.eps = eps
+    
+    def forward(self, x):
+        """
+        Args:
+            x (torch.Tensor): входная спектрограмма
+        Returns:
+            torch.Tensor: логарифмированная спектрограмма
+        """
+        return torch.log(x + self.eps)
+
+
 class STFTTransform(nn.Module):
     """
     STFT transform for audio processing.

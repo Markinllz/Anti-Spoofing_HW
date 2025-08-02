@@ -1,4 +1,4 @@
 _target_: torch.utils.data.DataLoader
-batch_size: 16
+batch_size: 32  # Увеличено с 16 для более стабильного обучения
 num_workers: 4
 pin_memory: true 
