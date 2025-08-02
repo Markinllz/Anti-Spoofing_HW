@@ -240,6 +240,7 @@ class BaseTrainer:
                 batch = self.process_batch(
                     batch,
                     metrics=self.train_metrics,
+                    metric_funcs=self.metrics["train"],
                 )
             except torch.cuda.OutOfMemoryError as e:
                 if self.skip_oom:
@@ -337,6 +338,7 @@ class BaseTrainer:
                 batch = self.process_batch(
                     batch,
                     metrics=self.evaluation_metrics,
+                    metric_funcs=self.metrics["inference"],
                 )
             # Логирование по шагам валидации убрано - происходит в _run_validation
             # с правильными префиксами и step значениями

@@ -33,8 +33,10 @@ class MetricTracker:
         for col in self._data.columns:
             self._data[col].values[:] = 0
         
+        # Сброс EER данных
         self._eer_scores = []
         self._eer_labels = []
+        print(f"🔄 MetricTracker сброшен. EER lists очищены.")
 
     def update(self, key, value, n=1):
         
@@ -44,24 +46,61 @@ class MetricTracker:
         self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
 
     def update_eer(self, scores, labels):
-     
-
-        self._eer_scores.extend(scores.detach().cpu().numpy())
-        self._eer_labels.extend(labels.detach().cpu().numpy())
+        """
+        Update EER scores and labels.
+        
+        Args:
+            scores (torch.Tensor): prediction scores
+            labels (torch.Tensor): ground truth labels
+        """
+        if scores.numel() == 0 or labels.numel() == 0:
+            print(f"⚠️ update_eer: получены пустые тензоры")
+            return
+            
+        # Конвертируем в numpy
+        scores_np = scores.detach().cpu().numpy().flatten()
+        labels_np = labels.detach().cpu().numpy().flatten()
+        
+        # Проверяем что размеры совпадают
+        if len(scores_np) != len(labels_np):
+            print(f"⚠️ update_eer: размеры не совпадают scores={len(scores_np)}, labels={len(labels_np)}")
+            return
+        
+        # Проверяем валидность данных
+        if np.any(np.isnan(scores_np)) or np.any(np.isinf(scores_np)):
+            print(f"⚠️ update_eer: некорректные scores (nan/inf)")
+            return
+            
+        # Добавляем данные
+        self._eer_scores.extend(scores_np)
+        self._eer_labels.extend(labels_np)
 
     def compute_eer(self):
         """
         Compute Equal Error Rate from accumulated scores and labels.
         """
-        if not self._eer_scores:
+        if not self._eer_scores or len(self._eer_scores) == 0:
+            print(f"⚠️ compute_eer: нет данных для вычисления EER")
             return 0.0
         
         scores = np.array(self._eer_scores)
         labels = np.array(self._eer_labels)
         
-
+        print(f"🧮 Вычисляем EER: {len(scores)} семплов")
+        print(f"    Уникальные labels: {np.unique(labels)}")
+        print(f"    Scores range: {scores.min():.4f} - {scores.max():.4f}")
+        
+        # Проверяем что есть оба класса
+        unique_labels = np.unique(labels)
+        if len(unique_labels) < 2:
+            print(f"⚠️ compute_eer: только один класс {unique_labels}")
+            return 0.0
+        
         # Получаем уникальные пороги
         thresholds = np.unique(scores)
+        if len(thresholds) < 2:
+            print(f"⚠️ compute_eer: все scores одинаковые")
+            return 0.5  # Random baseline
         
         # Вычисляем FAR и FRR для каждого порога
         far_values = []
@@ -95,6 +134,8 @@ class MetricTracker:
         # EER - это среднее FAR и FRR в этой точке
         eer = (far_values[min_idx] + frr_values[min_idx]) / 2
         
+        print(f"✅ EER вычислен: {eer:.6f} (FAR={far_values[min_idx]:.6f}, FRR={frr_values[min_idx]:.6f})")
+        
         return float(eer)
 
     def avg(self, key):
@@ -119,8 +160,8 @@ class MetricTracker:
                 for each metric name.
         """
         result = dict(self._data.average)
-        if self._eer_scores:
-            result['eer'] = self.compute_eer()
+        # Всегда включаем EER в результат
+        result['eer'] = self.compute_eer()
         return result
 
     def keys(self):
