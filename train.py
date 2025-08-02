@@ -55,13 +55,18 @@ def main(config):
     
     logger.info(model)
     
-    # Логируем параметры модели в CometML
-    if writer is not None:
-        writer.exp.log_parameters({
-            "total_params": total_params,
-            "trainable_params": trainable_params,
-            "model_name": config.model._target_.split('.')[-1],
-        })
+    # Логируем параметры модели в CometML/WandB если доступно
+    if writer is not None and hasattr(writer, 'exp') and writer.exp is not None:
+        try:
+            writer.exp.log_parameters({
+                "total_params": total_params,
+                "trainable_params": trainable_params,
+                "model_name": config.model._target_.split('.')[-1],
+            })
+        except Exception as e:
+            logger.warning(f"Не удалось залогировать параметры модели: {e}")
+    else:
+        logger.info("Writer не поддерживает логирование параметров или недоступен")
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)
