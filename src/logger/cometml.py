@@ -88,6 +88,8 @@ class CometMLWriter:
 
         except ImportError:
             logger.warning("For use comet_ml install it via \n\t pip install comet_ml")
+            # Устанавливаем exp в None когда comet_ml недоступен
+            self.exp = None
 
         self.step = 0
         # the mode is usually equal to the current partition name
@@ -142,6 +144,8 @@ class CometMLWriter:
             checkpoint_path (str): path to the checkpoint file.
             save_dir (str): path to the dir, where checkpoint is saved.
         """
+        if self.exp is None:
+            return
         # For comet, save dir is not required
         # It is kept for consistency with WandB
         self.exp.log_model(
@@ -156,6 +160,8 @@ class CometMLWriter:
             scalar_name (str): name of the scalar to use in the tracker.
             scalar (float): value of the scalar.
         """
+        if self.exp is None:
+            return
         self.exp.log_metrics(
             {
                 self._object_name(scalar_name): scalar,
@@ -170,6 +176,8 @@ class CometMLWriter:
         Args:
             scalars (dict): dict, containing scalar name and value.
         """
+        if self.exp is None:
+            return
         self.exp.log_metrics(
             {
                 self._object_name(scalar_name): scalar
@@ -187,6 +195,8 @@ class CometMLWriter:
             image (Path | Tensor | ndarray | list[tuple] | Image): image
                 in the CometML-friendly format.
         """
+        if self.exp is None:
+            return
         self.exp.log_image(
             image_data=image, name=self._object_name(image_name), step=self.step
         )
@@ -200,6 +210,8 @@ class CometMLWriter:
             audio (Path | ndarray): audio in the CometML-friendly format.
             sample_rate (int): audio sample rate.
         """
+        if self.exp is None:
+            return
         audio = audio.detach().cpu().numpy().T
         self.exp.log_audio(
             file_name=self._object_name(audio_name),
@@ -216,6 +228,8 @@ class CometMLWriter:
             text_name (str): name of the text to use in the tracker.
             text (str): text content.
         """
+        if self.exp is None:
+            return
         self.exp.log_text(
             text=text, step=self.step, metadata={"name": self._object_name(text_name)}
         )
@@ -230,6 +244,8 @@ class CometMLWriter:
                 histogram of.
             bins (int | str): the definition of bins for the histogram.
         """
+        if self.exp is None:
+            return
         # For comet, bins argument is not required
         # It is kept for consistency with WandB
 
@@ -251,6 +267,8 @@ class CometMLWriter:
             table_name (str): name of the table to use in the tracker.
             table (DataFrame): table content.
         """
+        if self.exp is None:
+            return
         self.exp.set_step(self.step)
         # log_table does not support step directly
         self.exp.log_table(

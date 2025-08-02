@@ -1,6 +1,7 @@
 hydra-core==1.3.2
 omegaconf==2.3.0
 wandb==0.16.2
+comet_ml==3.35.5
 torch==2.2.0
 torchaudio==2.2.0
 numpy==1.26.4
