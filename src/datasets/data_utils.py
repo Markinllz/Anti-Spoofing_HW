@@ -92,10 +92,12 @@ def get_dataloaders(config, device, debug_mode=False):
             batch_size = min(2, len(dataset))
             num_workers = 0
             pin_memory = False
+            shuffle = False  # В debug режиме не перемешиваем для воспроизводимости
         else:
             batch_size = config.dataloader.batch_size
             num_workers = getattr(config.dataloader, 'num_workers', 4)
             pin_memory = getattr(config.dataloader, 'pin_memory', True)
+            shuffle = True  # В обычном режиме обязательно перемешиваем
 
         assert batch_size <= len(dataset), (
             f"The batch size ({batch_size}) cannot "
@@ -110,7 +112,7 @@ def get_dataloaders(config, device, debug_mode=False):
             pin_memory=pin_memory,
             collate_fn=collate_fn,
             drop_last=False,  # В debug режиме не отбрасываем данные
-            shuffle=False,    # В debug режиме не перемешиваем для воспроизводимости
+            shuffle=shuffle,
             worker_init_fn=set_worker_seed,
         )
         

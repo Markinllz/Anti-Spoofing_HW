@@ -30,11 +30,11 @@ class CrossEntropyLoss(nn.Module):
         logits = batch['logits']
         labels = batch['labels']
         
-        # Проверяем размеры
-        if logits.dim() == 1:
-            logits = logits.unsqueeze(0)
-        if labels.dim() == 0:
-            labels = labels.unsqueeze(0)
+        # Проверяем что размерности корректны для CrossEntropy
+        # logits: [batch_size, num_classes], labels: [batch_size]
+        assert logits.dim() == 2, f"Expected logits dim=2, got {logits.dim()}"
+        assert labels.dim() == 1, f"Expected labels dim=1, got {labels.dim()}"
+        assert logits.size(0) == labels.size(0), "Batch size mismatch"
         
         # Вычисляем потерю
         loss = self.criterion(logits, labels)

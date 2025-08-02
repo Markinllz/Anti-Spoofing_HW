@@ -32,16 +32,16 @@ class EERMetric(BaseMetric):
         if 'scores' in batch:
             scores = batch['scores']
         elif 'logits' in batch:
-            # Если у нас есть logits, берем вероятность второго класса (spoof)
+            # Если у нас есть logits, берем вероятность первого класса (bonafide)
             logits = batch['logits']
-            scores = torch.softmax(logits, dim=1)[:, 1]
+            scores = torch.softmax(logits, dim=1)[:, 0]
         else:
             return 0.0
         
         labels = batch['labels']
         
         # Вычисляем EER
-        eer = self._compute_eer(scores, labels)
+        eer, _ = self._compute_eer(scores, labels)
         
         return eer
 
