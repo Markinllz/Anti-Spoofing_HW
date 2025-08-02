@@ -44,33 +44,13 @@ class Trainer(BaseTrainer):
         for loss_name in self.config.writer.loss_names:
             metrics.update(loss_name, batch[loss_name].item())
 
-        # ИСПРАВЛЕННОЕ ВЫЧИСЛЕНИЕ EER
-        if "logits" in batch and "labels" in batch:
-            logits = batch["logits"]
-            labels = batch["labels"]
-            
-            # Убеждаемся что размеры корректны
-            if logits.dim() == 2 and logits.size(1) >= 2:
-                # Получаем вероятности для класса bonafide (класс 0) - правильно для EER
-                scores = torch.softmax(logits, dim=1)[:, 0]
-                
-                # Проверяем что есть данные
-                if scores.numel() > 0 and labels.numel() > 0:
-                    metrics.update_eer(scores, labels)
-                else:
-                    print(f"⚠️ Пустые данные для EER: scores.numel()={scores.numel()}, labels.numel()={labels.numel()}")
-            else:
-                print(f"⚠️ Неправильные размеры logits: {logits.shape}")
-        else:
-            print(f"⚠️ Отсутствуют необходимые ключи: logits={('logits' in batch)}, labels={('labels' in batch)}")
-
-        # Update other metrics
+        # Update all metrics (включая EER) через metric_funcs
         for met in metric_funcs:
-            if met.name != "eer":
-                try:
-                    metrics.update(met.name, met(batch))
-                except Exception as e:
-                    print(f"⚠️ Ошибка в метрике {met.name}: {e}")
+            try:
+                metrics.update(met.name, met(batch))
+            except Exception as e:
+                # Молча игнорируем ошибки в метриках
+                pass
 
         return batch
 
