@@ -36,7 +36,6 @@ class MetricTracker:
         # Сброс EER данных
         self._eer_scores = []
         self._eer_labels = []
-        print(f"🔄 MetricTracker сброшен. EER lists очищены.")
 
     def update(self, key, value, n=1):
         
@@ -50,11 +49,10 @@ class MetricTracker:
         Update EER scores and labels.
         
         Args:
-            scores (torch.Tensor): prediction scores
-            labels (torch.Tensor): ground truth labels
+            scores (torch.Tensor): prediction scores (должны быть scores для bonafide класса)
+            labels (torch.Tensor): ground truth labels (1 = bonafide, 0 = spoof)
         """
         if scores.numel() == 0 or labels.numel() == 0:
-            print(f"⚠️ update_eer: получены пустые тензоры")
             return
             
         # Конвертируем в numpy
@@ -63,12 +61,10 @@ class MetricTracker:
         
         # Проверяем что размеры совпадают
         if len(scores_np) != len(labels_np):
-            print(f"⚠️ update_eer: размеры не совпадают scores={len(scores_np)}, labels={len(labels_np)}")
             return
         
         # Проверяем валидность данных
         if np.any(np.isnan(scores_np)) or np.any(np.isinf(scores_np)):
-            print(f"⚠️ update_eer: некорректные scores (nan/inf)")
             return
             
         # Добавляем данные
@@ -77,66 +73,87 @@ class MetricTracker:
 
     def compute_eer(self):
         """
-        Compute Equal Error Rate from accumulated scores and labels.
+        Compute Equal Error Rate from accumulated scores and labels using reference implementation.
         """
         if not self._eer_scores or len(self._eer_scores) == 0:
-            print(f"⚠️ compute_eer: нет данных для вычисления EER")
             return 0.0
         
         scores = np.array(self._eer_scores)
         labels = np.array(self._eer_labels)
         
-        print(f"🧮 Вычисляем EER: {len(scores)} семплов")
-        print(f"    Уникальные labels: {np.unique(labels)}")
-        print(f"    Scores range: {scores.min():.4f} - {scores.max():.4f}")
-        
         # Проверяем что есть оба класса
         unique_labels = np.unique(labels)
         if len(unique_labels) < 2:
-            print(f"⚠️ compute_eer: только один класс {unique_labels}")
             return 0.0
         
-        # Получаем уникальные пороги
-        thresholds = np.unique(scores)
-        if len(thresholds) < 2:
-            print(f"⚠️ compute_eer: все scores одинаковые")
-            return 0.5  # Random baseline
+        # Разделяем scores на bonafide и spoof
+        bonafide_scores = scores[labels == 1]  # Настоящие образцы
+        spoof_scores = scores[labels == 0]     # Поддельные образцы
         
-        # Вычисляем FAR и FRR для каждого порога
-        far_values = []
-        frr_values = []
+        if len(bonafide_scores) == 0 or len(spoof_scores) == 0:
+            return 0.0
         
-        for threshold in thresholds:
-            # Предсказания: 1 если score >= threshold, иначе 0
-            predictions = (scores >= threshold).astype(int)
-            
-            # Вычисляем confusion matrix
-            tp = np.sum((predictions == 1) & (labels == 1))
-            tn = np.sum((predictions == 0) & (labels == 0))
-            fp = np.sum((predictions == 1) & (labels == 0))
-            fn = np.sum((predictions == 0) & (labels == 1))
-            
-            # Вычисляем FAR и FRR
-            far = fp / (fp + tn) if (fp + tn) > 0 else 0
-            frr = fn / (fn + tp) if (fn + tp) > 0 else 0
-            
-            far_values.append(far)
-            frr_values.append(frr)
-        
-        # Находим точку, где FAR ≈ FRR
-        far_values = np.array(far_values)
-        frr_values = np.array(frr_values)
-        
-        # Находим индекс, где разность минимальна
-        diff = np.abs(far_values - frr_values)
-        min_idx = np.argmin(diff)
-        
-        # EER - это среднее FAR и FRR в этой точке
-        eer = (far_values[min_idx] + frr_values[min_idx]) / 2
-        
-        print(f"✅ EER вычислен: {eer:.6f} (FAR={far_values[min_idx]:.6f}, FRR={frr_values[min_idx]:.6f})")
+        # Используем эталонную реализацию
+        eer, threshold = self._compute_eer_reference(bonafide_scores, spoof_scores)
         
         return float(eer)
+
+    def _compute_eer_reference(self, bonafide_scores, spoof_scores):
+        """
+        Reference implementation of EER computation (эталонная реализация).
+        
+        Args:
+            bonafide_scores: scores for bonafide (genuine) samples
+            spoof_scores: scores for spoof (fake) samples
+            
+        Returns:
+            tuple: (eer, threshold)
+        """
+        frr, far, thresholds = self._compute_det_curve(bonafide_scores, spoof_scores)
+        abs_diffs = np.abs(frr - far)
+        min_index = np.argmin(abs_diffs)
+        eer = np.mean((frr[min_index], far[min_index]))
+        
+        return float(eer), float(thresholds[min_index])
+
+    def _compute_det_curve(self, target_scores, nontarget_scores):
+        """
+        Compute Detection Error Tradeoff (DET) curve (эталонная реализация).
+        
+        Args:
+            target_scores: scores for target (bonafide) samples
+            nontarget_scores: scores for nontarget (spoof) samples
+            
+        Returns:
+            tuple: (frr, far, thresholds)
+        """
+        n_scores = target_scores.size + nontarget_scores.size
+        all_scores = np.concatenate((target_scores, nontarget_scores))
+        labels = np.concatenate(
+            (np.ones(target_scores.size), np.zeros(nontarget_scores.size)))
+
+        # Sort labels based on scores
+        indices = np.argsort(all_scores, kind='mergesort')
+        labels = labels[indices]
+
+        # Compute false rejection and false acceptance rates
+        tar_trial_sums = np.cumsum(labels)
+        nontarget_trial_sums = nontarget_scores.size - \
+            (np.arange(1, n_scores + 1) - tar_trial_sums)
+
+        # False rejection rates (FRR): отклонение настоящих как поддельных
+        frr = np.concatenate(
+            (np.atleast_1d(0), tar_trial_sums / target_scores.size))
+        
+        # False acceptance rates (FAR): принятие поддельных как настоящих  
+        far = np.concatenate((np.atleast_1d(1), nontarget_trial_sums /
+                              nontarget_scores.size))
+        
+        # Thresholds are the sorted scores
+        thresholds = np.concatenate(
+            (np.atleast_1d(all_scores[indices[0]] - 0.001), all_scores[indices]))
+
+        return frr, far, thresholds
 
     def avg(self, key):
         """

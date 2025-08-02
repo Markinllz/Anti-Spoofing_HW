@@ -1,2 +1,3 @@
 _target_: src.model.model.LCNN
-num_classes: 2 
+num_classes: 2
+dropout_rate: 0.3  # Dropout для регуляризации модели 

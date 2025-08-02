@@ -67,7 +67,8 @@ class BaseDataset(Dataset):
                 try:
                     item[transform_name] = transform(item[transform_name])
                 except Exception as e:
-                    raise
+                    print(f"⚠️ Ошибка в трансформе {transform_name}: {e}")
+                    continue
         
         return item
 

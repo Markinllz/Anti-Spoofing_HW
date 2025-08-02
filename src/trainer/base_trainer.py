@@ -167,30 +167,30 @@ class BaseTrainer:
             self._last_epoch = epoch
             result = self._train_epoch(epoch)
 
-            # Основной лог с тренировочными метриками
+          
             log = {"epoch": epoch}
             log.update(result)
 
-            # ВАЛИДАЦИЯ В КОНЦЕ ЭПОХИ (согласно val_period)
+           
             val_log = {}
             if "val" in self.evaluation_dataloaders and (epoch % self.val_period == 0 or epoch == self.epochs):
                 val_results = self._run_validation(epoch, is_mid_epoch=False)
                 
-                # НЕ добавляем префикс val_ здесь, он уже есть в конфиге monitor
+                
                 val_log = {f"val_{k}": v for k, v in val_results.items()}
                 
-                # Добавляем валидационные метрики в log с префиксом для логгера
+                
                 log.update(val_log)
 
             # evaluate model performance according to configured metric
-            # ИСПОЛЬЗУЕМ ВАЛИДАЦИОННЫЕ МЕТРИКИ для model selection (если есть валидация в эту эпоху)!
+          
             monitor_logs = val_log if val_log else result
             best, stop_process, not_improved_count = self._monitor_performance(monitor_logs, not_improved_count=not_improved_count)
             early_stop_count = not_improved_count
 
             best_ckpt_path = str(self.checkpoint_dir / "model_best.pth")
             
-            # Логируем все метрики в основной лог  
+           
             for key, value in log.items():
                 self.logger.info(f"    {key:15s}: {value}")
 
@@ -205,12 +205,11 @@ class BaseTrainer:
                 print(f"Ранняя остановка на эпохе {epoch}")
                 break
                 
-        # ФИНАЛЬНАЯ ВАЛИДАЦИЯ
         print(f"\n🎯 Финальная валидация:")
         if "val" in self.evaluation_dataloaders:
             final_results = self._run_validation(self.epochs, is_mid_epoch=False, is_final=True)
         
-        # TEST ЗАПУСКАЕТСЯ ОТДЕЛЬНО - НЕ ЗДЕСЬ!
+        
         if self.test_dataloader is not None:
             print(f"\n⚠️ TEST набор доступен для финального inference")
             print(f"   Используйте inference.py для запуска теста")

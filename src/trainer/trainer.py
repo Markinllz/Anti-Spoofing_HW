@@ -29,8 +29,8 @@ class Trainer(BaseTrainer):
         if self.is_train:
             self.optimizer.zero_grad()
         
-        batch.update(self.model(**batch))
-        batch.update(self.criterion(**batch))
+        batch.update(self.model(batch))
+        batch.update(self.criterion(batch))
 
         # Обратное распространение и обновление весов
         if self.is_train:
@@ -51,8 +51,8 @@ class Trainer(BaseTrainer):
             
             # Убеждаемся что размеры корректны
             if logits.dim() == 2 and logits.size(1) >= 2:
-                # Получаем вероятности для класса spoof (класс 1)
-                scores = torch.softmax(logits, dim=1)[:, 1]
+                # Получаем вероятности для класса bonafide (класс 0) - правильно для EER
+                scores = torch.softmax(logits, dim=1)[:, 0]
                 
                 # Проверяем что есть данные
                 if scores.numel() > 0 and labels.numel() > 0:
@@ -68,7 +68,7 @@ class Trainer(BaseTrainer):
         for met in metric_funcs:
             if met.name != "eer":
                 try:
-                    metrics.update(met.name, met(**batch))
+                    metrics.update(met.name, met(batch))
                 except Exception as e:
                     print(f"⚠️ Ошибка в метрике {met.name}: {e}")
 

@@ -4,6 +4,7 @@ run_name: baseline-experiment
 model:
   _target_: src.model.model.LCNN
   num_classes: 2
+  dropout_rate: 0.3
 optimizer:
   _target_: torch.optim.Adam
   lr: 0.001
@@ -53,9 +54,9 @@ transforms:
     data_object: ${transforms.stft}
   stft:
     _target_: src.transforms.stft.STFTTransform
-    n_fft: 1024
-    hop_length: 512
-    win_length: 1024
+    n_fft: 1724
+    hop_length: 256
+    win_length: 1724
   batch_transforms:
     train:
       data_object:
@@ -79,7 +80,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: ts0gp052
+  run_id: fiztlom7
   run_name: training-experiment
   mode: online
   loss_names:

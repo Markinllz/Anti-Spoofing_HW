@@ -3,9 +3,9 @@ instance_transforms:
 
 stft:
   _target_: src.transforms.stft.STFTTransform
-  n_fft: 1024
-  hop_length: 512
-  win_length: 1024
+  n_fft: 1724  # Для получения 863 freq bins (1724//2 + 1 = 863)
+  hop_length: 256  # Для лучшего временного разрешения
+  win_length: 1724
 
 batch_transforms:
   train:

@@ -18,12 +18,12 @@ class EERMetric(BaseMetric):
         super(EERMetric, self).__init__()
         self.name = "eer"
 
-    def forward(self, **batch) -> float:
+    def __call__(self, batch) -> float:
         """
         Compute EER metric.
         
         Args:
-            **batch: input batch containing scores and labels
+            batch: input batch containing scores and labels
             
         Returns:
             float: EER value

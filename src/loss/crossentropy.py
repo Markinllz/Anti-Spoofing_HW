@@ -16,12 +16,12 @@ class CrossEntropyLoss(nn.Module):
         super(CrossEntropyLoss, self).__init__()
         self.criterion = nn.CrossEntropyLoss()
 
-    def forward(self, **batch) -> Dict[str, torch.Tensor]:
+    def forward(self, batch) -> Dict[str, torch.Tensor]:
         """
         Compute cross entropy loss.
         
         Args:
-            **batch: input batch containing logits and labels
+            batch: input batch containing logits and labels
             
         Returns:
             Dict[str, torch.Tensor]: loss dictionary
@@ -30,7 +30,6 @@ class CrossEntropyLoss(nn.Module):
         logits = batch['logits']
         labels = batch['labels']
         
-
         # Проверяем размеры
         if logits.dim() == 1:
             logits = logits.unsqueeze(0)

@@ -48,7 +48,6 @@ class STFTTransform(nn.Module):
             window=torch.hann_window(self.win_length).to(audio.device)
         )
         
-
         spectrogram = torch.abs(stft_output)
         
         return spectrogram
