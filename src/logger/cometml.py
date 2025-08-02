@@ -40,7 +40,8 @@ class CometMLWriter:
         try:
             import comet_ml
 
-            comet_ml.login()
+            # Убираем устаревший comet_ml.login() - в новых версиях не нужен
+            # comet_ml.login()
 
             self.run_id = run_id
 
@@ -89,6 +90,10 @@ class CometMLWriter:
         except ImportError:
             logger.warning("For use comet_ml install it via \n\t pip install comet_ml")
             # Устанавливаем exp в None когда comet_ml недоступен
+            self.exp = None
+        except Exception as e:
+            logger.warning(f"Failed to initialize CometML: {e}")
+            # Устанавливаем exp в None при любой ошибке инициализации
             self.exp = None
 
         self.step = 0
