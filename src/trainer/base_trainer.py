@@ -82,7 +82,7 @@ class BaseTrainer:
             self.epoch_len = epoch_len
 
         self.evaluation_dataloaders = {
-            k: v for k, v in dataloaders.items() if k != "train"
+            k: v for k, v in dataloaders.items() if k == "val"
         }
 
         # define epochs

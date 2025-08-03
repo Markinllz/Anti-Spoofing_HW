@@ -2,7 +2,7 @@ data_path: ${oc.env:DATA_PATH,data}
 project_name: anti-spoofing
 run_name: baseline-experiment
 model:
-  _target_: src.model.model.LCNN
+  _target_: src.model.model.LCNN_LSTM_Sum
   num_classes: 2
   dropout_rate: 0.3
 optimizer:
@@ -84,7 +84,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: olzi2zjh
+  run_id: oxau6aco
   run_name: training-experiment
   mode: online
   loss_names:

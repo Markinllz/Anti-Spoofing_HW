@@ -1,6 +1,6 @@
 seed: 42
 device: auto
-n_epochs: 100
+n_epochs: 200  # Увеличено для лучшей сходимости
 save_period: 5
 val_period: 1
 skip_oom: true

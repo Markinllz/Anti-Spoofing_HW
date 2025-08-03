@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class AsoftMax(nn.Module):
 
-    def __init__(self, margin=4, scale=30):
+    def __init__(self, margin=4, scale=20):  # Оптимизированные параметры как в статье
         super().__init__()
         self.margin = margin
         self.scale = scale
