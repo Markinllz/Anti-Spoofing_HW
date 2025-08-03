@@ -25,9 +25,10 @@ lr_scheduler:
   step_size: 5  # Уменьшаем step size
   gamma: 0.7  # Более плавное уменьшение
 
-metrics:
-  - _target_: src.metrics.eer.EERMetric
-    name: eer
+# Убираем переопределение metrics, так как это создает конфликт с базовой конфигурацией
+# metrics:
+#   - _target_: src.metrics.eer.EERMetric
+#     name: eer
 
 loss_function:
   _target_: src.loss.crossentropy.CrossEntropyLoss
