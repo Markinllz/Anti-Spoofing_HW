@@ -27,13 +27,13 @@ class Normalize(nn.Module):
         
         # Adapt mean and std dimensions to input tensor
         if x.dim() == 4:  # [batch, channels, freq, time]
-            mean = self.mean.view(1, -1, 1, 1)
-            std = self.std.view(1, -1, 1, 1)
+            mean = mean.view(1, -1, 1, 1)
+            std = std.view(1, -1, 1, 1)
         elif x.dim() == 3:  # [batch, freq, time] - our case after STFT
-            mean = self.mean.view(1, -1, 1)
-            std = self.std.view(1, -1, 1)
+            mean = mean.view(1, -1, 1)
+            std = std.view(1, -1, 1)
         else:
-            mean = self.mean
-            std = self.std
+            mean = mean
+            std = std
         
         return (x - mean) / std
