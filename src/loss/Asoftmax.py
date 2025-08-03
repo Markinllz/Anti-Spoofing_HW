@@ -46,7 +46,7 @@ class AsoftMax(nn.Module):
         
         # Перемещаем weights на тот же device что и input_feat
         if self.weight.device != input_feat.device:
-            self.weight = self.weight.to(input_feat.device)
+            self.weight = Parameter(self.weight.data.to(input_feat.device))
         
         # normalize the weight (again)
         w = self.weight.renorm(2, 1, 1e-5).mul(1e5)
@@ -67,6 +67,10 @@ class AsoftMax(nn.Module):
             index = torch.zeros_like(cos_theta)
             index.scatter_(1, target.data.view(-1, 1), 1)
             index = self.smooth_labels(index)
+            
+        # Убеждаемся что все тензоры на одном device
+        cos_theta = cos_theta.to(input_feat.device)
+        index = index.to(input_feat.device)
     
         # MSE between \cos\theta and one-hot vectors
         loss = self.m_loss(cos_theta, index)
