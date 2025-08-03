@@ -48,8 +48,7 @@ class Trainer(BaseTrainer):
             batch["loss"].backward()
             self._clip_grad_norm()
             self.optimizer.step()
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
+            # LR scheduler step moved to end of epoch in base_trainer.py
 
         for loss_name in self.config.writer.loss_names:
             metrics.update(loss_name, batch[loss_name].item())

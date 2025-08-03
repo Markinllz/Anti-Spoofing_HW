@@ -265,6 +265,10 @@ class BaseTrainer:
         # Final progress bar at 100%
         print(f"\r🚀 Эпоха {epoch} [████████████████████] 100% ({self.epoch_len}/{self.epoch_len}) ✅")
         
+        # Step the learning rate scheduler at the end of epoch
+        if self.lr_scheduler is not None:
+            self.lr_scheduler.step()
+        
         # Final statistics for entire epoch
         if step_losses:
             epoch_avg_loss = sum(step_losses) / len(step_losses)
