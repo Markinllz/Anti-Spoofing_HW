@@ -117,6 +117,6 @@ def get_dataloaders(config, device, debug_mode=False):
         dataloaders[dataset_partition] = partition_dataloader
         
         if debug_mode:
-            print(f"📁 {dataset_partition}: {len(dataset)} samples, batch_size={batch_size}")
+            print(f"{dataset_partition}: {len(dataset)} samples, batch_size={batch_size}")
 
     return dataloaders, batch_transforms

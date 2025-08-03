@@ -206,7 +206,7 @@ class BaseTrainer:
         self.writer.set_step((epoch - 1) * self.epoch_len)
         self.writer.add_scalar("epoch", epoch)
         
-        print(f"\n🚀 Эпоха {epoch}/{self.epochs} | Батчей: {self.epoch_len}")
+        print(f"\nЭпоха {epoch}/{self.epochs} | Батчей: {self.epoch_len}")
         
         # Accumulate metrics for log_step batches
         step_losses = []
@@ -235,8 +235,8 @@ class BaseTrainer:
             # Update progress bar each batch
             progress = int(((batch_idx + 1) / self.epoch_len) * 100)
             filled = int(progress / 5)  # 20 blocks for 100%
-            bar = "█" * filled + "░" * (20 - filled)
-            print(f"\r🚀 Эпоха {epoch} [{bar}] {progress}% ({batch_idx + 1}/{self.epoch_len})", end="")
+            bar = "=" * filled + "-" * (20 - filled)
+            print(f"\rЭпоха {epoch} [{bar}] {progress}% ({batch_idx + 1}/{self.epoch_len})", end="")
 
             # Log and output statistics every log_step batches
             if (batch_idx + 1) % self.log_step == 0:
@@ -257,17 +257,17 @@ class BaseTrainer:
                 avg_eer = sum(step_eers[-1:]) / len(step_eers[-1:]) if step_eers else 0
                 
                 # Output statistics
-                print(f"\n📊 Статистика за батчи {max(0, batch_idx + 1 - self.log_step)}-{batch_idx + 1}:")
-                print(f"    💥 Средний Loss: {avg_loss:.6f}")
+                print(f"\nСтатистика за батчи {max(0, batch_idx + 1 - self.log_step)}-{batch_idx + 1}:")
+                print(f"    Средний Loss: {avg_loss:.6f}")
                 if avg_eer > 0:
-                    print(f"    📈 EER: {avg_eer:.6f}")
+                    print(f"    EER: {avg_eer:.6f}")
                 
                 self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
                 break
         
         # Final progress bar at 100%
-        print(f"\r🚀 Эпоха {epoch} [████████████████████] 100% ({self.epoch_len}/{self.epoch_len}) ✅")
+        print(f"\rЭпоха {epoch} [====================] 100% ({self.epoch_len}/{self.epoch_len})")
         
         # Step the learning rate scheduler at the end of epoch
         if self.lr_scheduler is not None:
@@ -276,13 +276,13 @@ class BaseTrainer:
         # Final statistics for entire epoch
         if step_losses:
             epoch_avg_loss = sum(step_losses) / len(step_losses)
-            print(f"📈 Итоги эпохи {epoch}:")
-            print(f"    💥 Средний Loss за эпоху: {epoch_avg_loss:.6f}")
+            print(f"Итоги эпохи {epoch}:")
+            print(f"    Средний Loss за эпоху: {epoch_avg_loss:.6f}")
             if step_eers:
                 epoch_avg_eer = sum(step_eers) / len(step_eers)
-                print(f"    📊 Средний EER за эпоху: {epoch_avg_eer:.6f}")
+                print(f"    Средний EER за эпоху: {epoch_avg_eer:.6f}")
         
-        print(f"✅ Эпоха {epoch} завершена!")
+        print(f"Эпоха {epoch} завершена!")
 
         # Get final train metrics
         train_logs = self.train_metrics.result()
@@ -316,21 +316,21 @@ class BaseTrainer:
         
         # Determine correct display name
         part_display = "валидации" if part == "dev" else "тестирования"
-        print(f"\n🔍 {part_display.capitalize()} на {part}...")
+        print(f"\n{part_display.capitalize()} на {part}...")
         
         with torch.no_grad():
             total_batches = len(dataloader)
             for batch_idx, batch in enumerate(dataloader):
                 # Simple progress without excessive output
                 progress = int(((batch_idx + 1) / total_batches) * 100)
-                print(f"\r  🔍 {part_display.capitalize()}: {progress}% ({batch_idx + 1}/{total_batches})", end="")
+                print(f"\r  {part_display.capitalize()}: {progress}% ({batch_idx + 1}/{total_batches})", end="")
                 batch = self.process_batch(
                     batch,
                     metrics=self.evaluation_metrics,
                 )
             
             # Final validation progress
-            print(f"\r  🔍 {part_display.capitalize()}: 100% ({total_batches}/{total_batches}) ✅")
+            print(f"\r  {part_display.capitalize()}: 100% ({total_batches}/{total_batches})")
             
             # Log evaluation metrics to CometML with correct step
             self.writer.set_step(epoch, part)  # Fixed: epoch instead of epoch * self.epoch_len
@@ -343,7 +343,7 @@ class BaseTrainer:
         
         # Print evaluation results nicely
         part_prefix = "Dev" if part == "dev" else "Eval"
-        print(f"📈 Результаты {part_display} {part}:")
+        print(f"Результаты {part_display} {part}:")
         if "loss" in eval_results:
             print(f"    {part_prefix} Loss: {eval_results['loss']:.6f}")
         if "eer" in eval_results:
@@ -354,7 +354,7 @@ class BaseTrainer:
         
         # Also output final train metrics for comparison
         train_results = self.train_metrics.result()
-        print(f"📊 Итоговые train метрики:")
+        print(f"Итоговые train метрики:")
         if "loss" in train_results:
             print(f"    Train Loss: {train_results['loss']:.6f}")
         if "eer" in train_results:

@@ -174,7 +174,7 @@ class Inferencer(BaseTrainer):
 
         # Determine correct display name
         part_display = "валидации" if part == "dev" else "тестирования"
-        print(f"\n🔍 Запуск {part_display} на {part}...")
+        print(f"\nЗапуск {part_display} на {part}...")
 
         with torch.no_grad():
             for batch_idx, batch in tqdm(

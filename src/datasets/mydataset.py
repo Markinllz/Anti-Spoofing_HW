@@ -32,14 +32,14 @@ class AudioSpoofingDataset(BaseDataset):
         
         # Create index if it doesn't exist
         if Path(out_path).exists():
-            print(f"📁 Загружаем готовый index.json: {out_path}")
+            print(f"Загружаем готовый index.json: {out_path}")
             index = read_json(out_path)
-            print(f"✅ Загружено {len(index)} записей из кэша")
+            print(f"Загружено {len(index)} записей из кэша")
             
             # Автоматически заменяем пути для Kaggle
             kaggle_data_path = os.environ.get("DATA_PATH")
             if kaggle_data_path and kaggle_data_path != "data":
-                print(f"🔄 Заменяем пути для Kaggle: {kaggle_data_path}")
+                print(f"Заменяем пути для Kaggle: {kaggle_data_path}")
                 for item in index:
                     # Заменяем старые пути на новые для Kaggle
                     if item["path"].startswith("data/ASVspoof2019_LA_"):
@@ -53,7 +53,7 @@ class AudioSpoofingDataset(BaseDataset):
                         elif "eval" in item["path"]:
                             item["path"] = f"{kaggle_data_path}/ASVspoof2019_LA_eval/flac/{file_name}"
         else:
-            print(f"🔄 Создаем новый index.json: {out_path}")
+            print(f"Создаем новый index.json: {out_path}")
             index = self._create_index(label_path, audio_path, out_path)
 
         # Ограничиваем размер датасета для отладки
@@ -101,7 +101,7 @@ class AudioSpoofingDataset(BaseDataset):
         except Exception as e:
             # Return zero tensor as fallback - увеличиваем до 4 секунд
             fallback_waveform = torch.zeros(1, 64000)  # 4 seconds of silence at 16kHz
-            print(f"⚠️ Ошибка загрузки аудио {audio_path}: {e}")
+            print(f"Ошибка загрузки аудио {audio_path}: {e}")
             return {
                 "data_object": fallback_waveform,
                 "labels": label
@@ -155,10 +155,10 @@ class AudioSpoofingDataset(BaseDataset):
         
         # Выводим статистику датасета
         total_samples = len(index)
-        print(f"\n📊 Статистика датасета '{self.name}':")
-        print(f"   📁 Всего файлов: {total_samples}")
-        print(f"   ✅ Bonafide (класс 0): {bonafide_count} ({100*bonafide_count/total_samples:.1f}%)")
-        print(f"   ❌ Spoof (класс 1): {spoof_count} ({100*spoof_count/total_samples:.1f}%)")
-        print(f"   ⚖️ Соотношение spoof/bonafide: {spoof_count/bonafide_count:.2f}")
+        print(f"\nСтатистика датасета '{self.name}':")
+        print(f"   Всего файлов: {total_samples}")
+        print(f"   Bonafide (класс 0): {bonafide_count} ({100*bonafide_count/total_samples:.1f}%)")
+        print(f"   Spoof (класс 1): {spoof_count} ({100*spoof_count/total_samples:.1f}%)")
+        print(f"   Соотношение spoof/bonafide: {spoof_count/bonafide_count:.2f}")
 
         return index
