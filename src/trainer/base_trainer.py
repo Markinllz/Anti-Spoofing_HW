@@ -181,6 +181,10 @@ class BaseTrainer:
 
             if epoch % self.save_period == 0 or best:
                 self._save_checkpoint(epoch, save_best=best, only_best=True)
+            
+            # Additional save to my_model.pth every 7 epochs
+            if epoch % 7 == 0:
+                self._save_my_model(epoch)
 
             if stop_process:  # early_stop
                 break
@@ -561,6 +565,32 @@ class BaseTrainer:
             if self.config.writer.log_checkpoints:
                 self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
             self.logger.info("Saving current best: model_best.pth ...")
+
+    def _save_my_model(self, epoch):
+        """
+        Save model to my_model.pth in the root directory.
+        
+        Args:
+            epoch (int): current epoch number.
+        """
+        arch = type(self.model).__name__
+        state = {
+            "arch": arch,
+            "epoch": epoch,
+            "state_dict": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "lr_scheduler": self.lr_scheduler.state_dict(),
+            "monitor_best": self.mnt_best,
+            "config": self.config,
+        }
+        
+        # Save to root directory (same level as src folder)
+        import os
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        filename = os.path.join(root_dir, "my_model.pth")
+        
+        torch.save(state, filename)
+        self.logger.info(f"Saving my_model.pth at epoch {epoch}: {filename}")
 
     def _resume_checkpoint(self, resume_path):
         """
