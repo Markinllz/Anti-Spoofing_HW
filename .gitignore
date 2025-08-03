@@ -102,7 +102,7 @@ ENV/
 .mypy_cache/
 
 # input data, saved log, checkpoints, hydra outputs
-data/*/
+data/ASVspoof2019_LA_*/
 data/*.flac
 data/*.wav
 data/*.mp3

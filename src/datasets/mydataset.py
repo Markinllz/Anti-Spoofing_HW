@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torchaudio
 from tqdm.auto import tqdm
+import os
 
 from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH, read_json, write_json
@@ -37,6 +38,23 @@ class AudioSpoofingDataset(BaseDataset):
             print(f"📁 Загружаем готовый index.json: {out_path}")
             index = read_json(out_path)
             print(f"✅ Загружено {len(index)} записей из кэша")
+            
+            # Автоматически заменяем пути для Kaggle
+            kaggle_data_path = os.environ.get("DATA_PATH")
+            if kaggle_data_path and kaggle_data_path != "data":
+                print(f"🔄 Заменяем пути для Kaggle: {kaggle_data_path}")
+                for item in index:
+                    # Заменяем старые пути на новые для Kaggle
+                    if item["path"].startswith("data/ASVspoof2019_LA_"):
+                        # Извлекаем имя файла из старого пути
+                        file_name = item["path"].split("/")[-1]
+                        # Определяем тип данных (train/dev/eval)
+                        if "train" in item["path"]:
+                            item["path"] = f"{kaggle_data_path}/ASVspoof2019_LA_train/flac/{file_name}"
+                        elif "dev" in item["path"]:
+                            item["path"] = f"{kaggle_data_path}/ASVspoof2019_LA_dev/flac/{file_name}"
+                        elif "eval" in item["path"]:
+                            item["path"] = f"{kaggle_data_path}/ASVspoof2019_LA_eval/flac/{file_name}"
         else:
             print(f"🔄 Создаем новый index.json: {out_path}")
             index = self._create_index(label_path, audio_path, out_path)
