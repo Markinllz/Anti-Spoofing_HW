@@ -10,6 +10,6 @@ save_dir: checkpoints
 device_tensors:
   - data_object
   - labels
-monitor: min val_eer
+monitor: min dev_eer
 early_stop: 20 
 override: True

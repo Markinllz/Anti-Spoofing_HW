@@ -14,18 +14,14 @@ class AudioSpoofingDataset(BaseDataset):
     Dataset class for ASVspoof2019 audio anti-spoofing challenge.
     """
 
-    def __init__(
-        self, name="train", label_path=None, audio_path=None, out_path=None, 
-        instance_transforms=None, max_samples=None, *args, **kwargs
-    ):
+    def __init__(self, name, label_path, audio_path, out_path, instance_transforms=None):
         """
         Args:
-            name (str): partition name (train, val, test)
-            label_path (str): path to the protocol file
-            audio_path (str): path to the directory with .flac files
-            out_path (str): where to save index.json
-            instance_transforms (dict): transforms to apply to instances
-            max_samples (int): maximum number of samples for debugging (None for all)
+            name (str): partition name (train, dev, eval)
+            label_path (str): path to the label file
+            audio_path (str): path to the audio directory
+            out_path (str): path to save the processed index
+            instance_transforms (callable): transforms to apply to each instance
         """
         self.name = name
         self.label_path = label_path

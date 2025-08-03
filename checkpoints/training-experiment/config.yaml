@@ -7,12 +7,12 @@ model:
   dropout_rate: 0.3
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.0003
+  lr: 0.0001
   weight_decay: 0.0001
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
-  step_size: 10
-  gamma: 0.5
+  step_size: 20
+  gamma: 0.7
 loss_function:
   _target_: src.loss.Asoftmax.AsoftMax
   margin: 4
@@ -86,7 +86,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: dk9upvfx
+  run_id: 2p7pg622
   run_name: training-experiment
   mode: online
   loss_names:

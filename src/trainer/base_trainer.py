@@ -82,7 +82,7 @@ class BaseTrainer:
             self.epoch_len = epoch_len
 
         self.evaluation_dataloaders = {
-            k: v for k, v in dataloaders.items() if k == "val"
+            k: v for k, v in dataloaders.items() if k in ["dev", "eval"]
         }
 
         # define epochs
@@ -284,7 +284,7 @@ class BaseTrainer:
         self.writer.set_step(epoch, "train")  # Исправлено: epoch вместо epoch * self.epoch_len
         self._log_scalars(self.train_metrics)
         
-        # Run val/test
+        # Run dev/eval
         for part, dataloader in self.evaluation_dataloaders.items():
             val_logs = self._evaluation_epoch(epoch, part, dataloader)
             logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
@@ -297,7 +297,7 @@ class BaseTrainer:
 
         Args:
             epoch (int): current training epoch.
-            part (str): partition to evaluate on
+            part (str): partition to evaluate on (dev or eval)
             dataloader (DataLoader): dataloader for the partition.
         Returns:
             logs (dict): logs that contain the information about evaluation.
@@ -305,22 +305,26 @@ class BaseTrainer:
         self.is_train = False
         self.model.eval()
         self.evaluation_metrics.reset()
-        print(f"\n🔍 Валидация на {part}...")
+        
+        # Определяем правильное название для вывода
+        part_display = "валидации" if part == "dev" else "тестирования"
+        print(f"\n🔍 {part_display.capitalize()} на {part}...")
+        
         with torch.no_grad():
             total_batches = len(dataloader)
             for batch_idx, batch in enumerate(dataloader):
                 # Простой прогресс без излишнего вывода
                 progress = int(((batch_idx + 1) / total_batches) * 100)
-                print(f"\r  🔍 Валидация: {progress}% ({batch_idx + 1}/{total_batches})", end="")
+                print(f"\r  🔍 {part_display.capitalize()}: {progress}% ({batch_idx + 1}/{total_batches})", end="")
                 batch = self.process_batch(
                     batch,
                     metrics=self.evaluation_metrics,
                 )
             
             # Final validation progress
-            print(f"\r  🔍 Валидация: 100% ({total_batches}/{total_batches}) ✅")
+            print(f"\r  🔍 {part_display.capitalize()}: 100% ({total_batches}/{total_batches}) ✅")
             
-            # Log validation metrics to CometML with correct step
+            # Log evaluation metrics to CometML with correct step
             self.writer.set_step(epoch, part)  # Исправлено: epoch вместо epoch * self.epoch_len
             self._log_scalars(self.evaluation_metrics)
             self._log_batch(
@@ -329,15 +333,16 @@ class BaseTrainer:
 
         eval_results = self.evaluation_metrics.result()
         
-        # Print validation results nicely
-        print(f"📈 Результаты валидации {part}:")
+        # Print evaluation results nicely
+        part_prefix = "Dev" if part == "dev" else "Eval"
+        print(f"📈 Результаты {part_display} {part}:")
         if "loss" in eval_results:
-            print(f"    Val Loss: {eval_results['loss']:.6f}")
+            print(f"    {part_prefix} Loss: {eval_results['loss']:.6f}")
         if "eer" in eval_results:
-            print(f"    Val EER: {eval_results['eer']:.6f}")
+            print(f"    {part_prefix} EER: {eval_results['eer']:.6f}")
         for metric_name, metric_value in eval_results.items():
             if metric_name not in ["loss", "eer"]:
-                print(f"    Val {metric_name}: {metric_value:.6f}")
+                print(f"    {part_prefix} {metric_name}: {metric_value:.6f}")
         
         # Также выводим итоговые train метрики для сравнения
         train_results = self.train_metrics.result()

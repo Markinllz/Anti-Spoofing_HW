@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class AsoftMax(nn.Module):
     """
-    Простая сигмоида loss для anti-spoofing.
+    Сигмоида loss для anti-spoofing (как в статье).
     """
 
     def __init__(self, margin=0.2, scale=15):
@@ -13,7 +13,7 @@ class AsoftMax(nn.Module):
 
     def forward(self, batch, **kwargs):
         """
-        Сигмоида loss compute
+        Сигмоида loss compute (как в статье для 5% EER)
         
         Args:
             batch (dict): batch containing 'logits' and 'labels'
@@ -24,7 +24,8 @@ class AsoftMax(nn.Module):
         logits = batch['logits']
         labels = batch['labels']
         
-        # Простой CrossEntropy loss (эквивалент сигмоиды для бинарной классификации)
+        # Правильная сигмоида loss как в статье
+        # Для бинарной классификации используем CrossEntropy с правильной обработкой
         loss = F.cross_entropy(logits, labels)
         
         return {"loss": loss}

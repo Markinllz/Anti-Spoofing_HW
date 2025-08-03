@@ -157,7 +157,7 @@ class Inferencer(BaseTrainer):
         Run inference on a given partition and save predictions
 
         Args:
-            part (str): name of the partition.
+            part (str): name of the partition (dev or eval).
             dataloader (DataLoader): dataloader for the given partition.
         Returns:
             logs (dict): metrics, calculated on the partition.
@@ -172,10 +172,14 @@ class Inferencer(BaseTrainer):
         if self.save_path is not None:
             (self.save_path / part).mkdir(exist_ok=True, parents=True)
 
+        # Определяем правильное название для вывода
+        part_display = "валидации" if part == "dev" else "тестирования"
+        print(f"\n🔍 Запуск {part_display} на {part}...")
+
         with torch.no_grad():
             for batch_idx, batch in tqdm(
                 enumerate(dataloader),
-                desc=part,
+                desc=f"{part_display.capitalize()} {part}",
                 total=len(dataloader),
             ):
                 batch = self.process_batch(
@@ -187,7 +191,7 @@ class Inferencer(BaseTrainer):
 
         results = self.evaluation_metrics.result()
         
-      
+        # Log metrics to writer if available
         if self.writer is not None:
             for metric_name, metric_value in results.items():
                 self.writer.add_scalar(f"inference_{part}_{metric_name}", metric_value, 0)
