@@ -29,13 +29,7 @@ class STFTTransform(nn.Module):
     """
 
     def __init__(self, n_fft=512, hop_length=None, win_length=None, **kwargs):
-        """
-        Args:
-            n_fft (int): размер FFT
-            hop_length (int): шаг FFT
-            win_length (int): размер окна
-            **kwargs: дополнительные аргументы
-        """
+ 
         super(STFTTransform, self).__init__()
         
         self.n_fft = n_fft
@@ -73,9 +67,9 @@ class STFTTransform(nn.Module):
             return_complex=self.return_complex
         )
         
-        spectrogram = torch.abs(stft_output)
+        #spectrogram = torch.abs(stft_output)
         
-        return spectrogram
+        return 0
 
 
 class MelSpectrogramTransform(nn.Module):
