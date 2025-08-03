@@ -44,6 +44,10 @@ class AsoftMax(nn.Module):
             self.weight = Parameter(torch.Tensor(in_dim, out_dim))
             self.weight.data.uniform_(-1, 1).renorm_(2,1,1e-5).mul_(1e5)
         
+        # Перемещаем weights на тот же device что и input_feat
+        if self.weight.device != input_feat.device:
+            self.weight = self.weight.to(input_feat.device)
+        
         # normalize the weight (again)
         w = self.weight.renorm(2, 1, 1e-5).mul(1e5)
         
