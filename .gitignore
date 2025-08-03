@@ -102,7 +102,10 @@ ENV/
 .mypy_cache/
 
 # input data, saved log, checkpoints, hydra outputs
-data/
+data/*/
+data/*.flac
+data/*.wav
+data/*.mp3
 input/
 saved/
 wandb/

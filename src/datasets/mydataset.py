@@ -34,8 +34,11 @@ class AudioSpoofingDataset(BaseDataset):
         
         # Create index if it doesn't exist
         if Path(out_path).exists():
+            print(f"📁 Загружаем готовый index.json: {out_path}")
             index = read_json(out_path)
+            print(f"✅ Загружено {len(index)} записей из кэша")
         else:
+            print(f"🔄 Создаем новый index.json: {out_path}")
             index = self._create_index(label_path, audio_path, out_path)
 
         # Ограничиваем размер датасета для отладки
