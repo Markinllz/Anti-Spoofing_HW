@@ -172,7 +172,7 @@ class Inferencer(BaseTrainer):
         if self.save_path is not None:
             (self.save_path / part).mkdir(exist_ok=True, parents=True)
 
-        # Определяем правильное название для вывода
+        # Determine correct display name
         part_display = "валидации" if part == "dev" else "тестирования"
         print(f"\n🔍 Запуск {part_display} на {part}...")
 
@@ -194,7 +194,7 @@ class Inferencer(BaseTrainer):
         # Log metrics to writer if available
         if self.writer is not None:
             for metric_name, metric_value in results.items():
-                self.writer.add_scalar(f"inference_{part}_{metric_name}", metric_value, 0)
+                self.writer.add_scalar(f"inference_{part}_{metric_name}", metric_value)
                 print(f"    {part}_{metric_name}: {metric_value}")
         
         return results

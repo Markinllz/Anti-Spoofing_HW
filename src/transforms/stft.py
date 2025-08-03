@@ -58,14 +58,19 @@ class STFTTransform(nn.Module):
         elif audio.dim() == 3:
             audio = audio.squeeze(1)
         
-        # Применяем STFT
-        stft_output = torch.stft(
+        # Apply STFT
+        stft_features = torch.stft(
             audio,
             n_fft=self.n_fft,
             hop_length=self.hop_length,
             win_length=self.win_length,
-            return_complex=True,
-            window=torch.hann_window(self.win_length).to(audio.device)
+            window=self.window,
+            center=self.center,
+            pad_mode=self.pad_mode,
+            power=self.power,
+            normalized=self.normalized,
+            onesided=self.onesided,
+            return_complex=self.return_complex
         )
         
         spectrogram = torch.abs(stft_output)

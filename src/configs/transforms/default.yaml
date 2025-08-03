@@ -4,27 +4,25 @@ instance_transforms:
 lfcc:
   _target_: src.transforms.lfcc.LFCCTransform
   sample_rate: 16000
-  n_fft: 512           # 512-point FFT как в статье
-  hop_length: 160      # 10ms frame shift at 16kHz
-  win_length: 320      # 20ms frame length at 16kHz  
-  n_filter: 20         # 20 linear triangular filters
-  n_lfcc: 20           # 20 cepstral coefficients
-  use_deltas: true     # static + delta + delta-delta = 60-dim
+  n_fft: 512
+  hop_length: 160
+  win_length: 320
+  n_filter: 20
+  n_lfcc: 20
+  use_deltas: true
 
 batch_transforms:
   train:
     data_object:
       _target_: torch.nn.Sequential
       _args_:
-        # Нормализация LFCC признаков (60-мерных)
         - _target_: src.transforms.normalize.Normalize
-          mean: [0.0]  # Подходящее для LFCC признаков  
-          std: [1.0]   # Стандартная нормализация
+          mean: [0.0]
+          std: [1.0]
   inference:
     data_object:
       _target_: torch.nn.Sequential
       _args_:
-        # Те же трансформации для inference
         - _target_: src.transforms.normalize.Normalize
           mean: [0.0]
           std: [1.0]

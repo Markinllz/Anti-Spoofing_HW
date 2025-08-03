@@ -72,32 +72,30 @@ def get_dataloaders(config, device, debug_mode=False):
 
     # dataloaders init
     dataloaders = {}
-    debug_subset = None  # Сохраняем один subset для всех разделов
+    debug_subset = None  # Save one subset for all partitions
     
     for dataset_partition in config.datasets.keys():
         dataset = datasets[dataset_partition]
         
-        # Для отладки все разделы используют одни и те же данные из train
+        # For debugging all partitions use same data from train
         if debug_mode:
-            from torch.utils.data import Subset
-            if debug_subset is None:
-                # Создаем subset только один раз из первого датасета (обычно train)
-                debug_subset_indices = range(min(4, len(dataset)))
-                debug_subset = Subset(dataset, debug_subset_indices)
-                print(f"Debug mode: using {len(debug_subset)} samples for all partitions")
-            dataset = debug_subset
-
-        # Для отладки изменяем параметры даталоадера
+            # Create subset only once from first dataset (usually train)
+            first_dataset = list(dataloaders.values())[0].dataset
+            debug_subset = torch.utils.data.Subset(first_dataset, range(min(100, len(first_dataset))))
+        
+        # For debugging change dataloader parameters
         if debug_mode:
             batch_size = min(2, len(dataset))
-            num_workers = 0
-            pin_memory = False
-            shuffle = False  # В debug режиме не перемешиваем для воспроизводимости
+            shuffle = False  # In debug mode don't shuffle for reproducibility
+            num_workers = 0  # Single process for debugging
+            pin_memory = False  # No pin memory for debugging
+            drop_last = False  # In debug mode don't drop data
         else:
             batch_size = config.dataloader.batch_size
-            num_workers = getattr(config.dataloader, 'num_workers', 4)
-            pin_memory = getattr(config.dataloader, 'pin_memory', True)
-            shuffle = True  # В обычном режиме обязательно перемешиваем
+            shuffle = True  # In normal mode definitely shuffle
+            num_workers = config.dataloader.num_workers
+            pin_memory = config.dataloader.pin_memory
+            drop_last = config.dataloader.drop_last
 
         assert batch_size <= len(dataset), (
             f"The batch size ({batch_size}) cannot "
@@ -111,7 +109,7 @@ def get_dataloaders(config, device, debug_mode=False):
             num_workers=num_workers,
             pin_memory=pin_memory,
             collate_fn=collate_fn,
-            drop_last=False,  # В debug режиме не отбрасываем данные
+            drop_last=drop_last,  # In debug mode don't drop data
             shuffle=shuffle,
             worker_init_fn=set_worker_seed,
         )
@@ -119,6 +117,6 @@ def get_dataloaders(config, device, debug_mode=False):
         dataloaders[dataset_partition] = partition_dataloader
         
         if debug_mode:
-            print(f"📁 {dataset_partition}: {len(dataset)} образцов, batch_size={batch_size}")
+            print(f"📁 {dataset_partition}: {len(dataset)} samples, batch_size={batch_size}")
 
     return dataloaders, batch_transforms

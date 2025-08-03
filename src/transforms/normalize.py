@@ -25,15 +25,15 @@ class Normalize(nn.Module):
         mean = self.mean.to(device)
         std = self.std.to(device)
         
-        # Адаптируем размерности mean и std под входной тензор
-        if x.dim() == 4:  # [batch, channels, height, width]
-            mean = mean.view(1, -1, 1, 1)
-            std = std.view(1, -1, 1, 1)
-        elif x.dim() == 3:  # [batch, freq, time] - наш случай после STFT
-            mean = mean.view(1, 1, 1) if len(mean) == 1 else mean.view(1, -1, 1)
-            std = std.view(1, 1, 1) if len(std) == 1 else std.view(1, -1, 1)
-        elif x.dim() == 2:  # [batch, features]
-            mean = mean.view(1, -1)
-            std = std.view(1, -1)
+        # Adapt mean and std dimensions to input tensor
+        if x.dim() == 4:  # [batch, channels, freq, time]
+            mean = self.mean.view(1, -1, 1, 1)
+            std = self.std.view(1, -1, 1, 1)
+        elif x.dim() == 3:  # [batch, freq, time] - our case after STFT
+            mean = self.mean.view(1, -1, 1)
+            std = self.std.view(1, -1, 1)
+        else:
+            mean = self.mean
+            std = self.std
         
         return (x - mean) / std

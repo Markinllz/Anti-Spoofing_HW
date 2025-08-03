@@ -41,7 +41,7 @@ def main(config):
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
     
-    # Подсчет параметров модели
+    # Count model parameters
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     
@@ -55,18 +55,10 @@ def main(config):
     
     logger.info(model)
     
-    # Логируем параметры модели в CometML/WandB если доступно
-    if writer is not None and hasattr(writer, 'exp') and writer.exp is not None:
-        try:
-            writer.exp.log_parameters({
-                "total_params": total_params,
-                "trainable_params": trainable_params,
-                "model_name": config.model._target_.split('.')[-1],
-            })
-        except Exception as e:
-            logger.warning(f"Не удалось залогировать параметры модели: {e}")
-    else:
-        logger.info("Writer не поддерживает логирование параметров или недоступен")
+    # Log model parameters to CometML/WandB if available
+    if hasattr(writer, 'add_scalar'):
+        writer.add_scalar("model/total_params", total_params)
+        writer.add_scalar("model/trainable_params", trainable_params)
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)

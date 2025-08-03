@@ -1,3 +1,4 @@
 _target_: src.model.model.LCNN
+in_channels: 1
 num_classes: 2
-dropout_rate: 0.3  # Dropout для регуляризации модели 
+dropout_rate: 0.3  # Dropout for model regularization 

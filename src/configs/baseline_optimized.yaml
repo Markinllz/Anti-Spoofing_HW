@@ -1,9 +1,9 @@
 defaults:
   - _self_
-  - model: lcnn_lstm_sum  # Лучшая модель из статьи
+  - model: lcnn_lstm_sum  # Best model from paper
   - optimizer: adam
   - lr_scheduler: step
-  - loss_function: asoftmax  # Лучшая loss function
+  - loss_function: asoftmax  # Best loss function
   - metrics: default
   - datasets: asvspoof2019
   - dataloader: default

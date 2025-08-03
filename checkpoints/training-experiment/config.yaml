@@ -12,7 +12,7 @@ optimizer:
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
   step_size: 20
-  gamma: 0.7
+  gamma: 0.1
 loss_function:
   _target_: src.loss.Asoftmax.AsoftMax
   margin: 4
@@ -28,29 +28,31 @@ datasets:
   train:
     _target_: src.datasets.mydataset.AudioSpoofingDataset
     name: train
-    label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt
-    audio_path: ${data_path}/ASVspoof2019_LA_train/flac
-    out_path: data/train_index.json
-    instance_transforms: ${transforms.instance_transforms}
-  val:
-    _target_: src.datasets.mydataset.AudioSpoofingDataset
-    name: val
-    label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt
-    audio_path: ${data_path}/ASVspoof2019_LA_dev/flac
-    out_path: data/val_index.json
-    instance_transforms: ${transforms.instance_transforms}
-  test:
-    _target_: src.datasets.mydataset.AudioSpoofingDataset
-    name: test
     label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt
     audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
-    out_path: data/test_index.json
+    out_path: data/train_index.json
+    instance_transforms: ${transforms.instance_transforms}
+  dev:
+    _target_: src.datasets.mydataset.AudioSpoofingDataset
+    name: dev
+    label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.dev.trl.txt
+    audio_path: ${data_path}/ASVspoof2019_LA_dev/flac
+    out_path: data/dev_index.json
+    instance_transforms: ${transforms.instance_transforms}
+  eval:
+    _target_: src.datasets.mydataset.AudioSpoofingDataset
+    name: eval
+    label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt
+    audio_path: ${data_path}/ASVspoof2019_LA_train/flac
+    out_path: data/eval_index.json
     instance_transforms: ${transforms.instance_transforms}
 dataloader:
   _target_: torch.utils.data.DataLoader
   batch_size: 64
   num_workers: 4
   pin_memory: true
+  shuffle: true
+  drop_last: false
 transforms:
   instance_transforms:
     data_object: ${transforms.lfcc}
@@ -86,7 +88,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: 2p7pg622
+  run_id: r2z1q9ze
   run_name: training-experiment
   mode: online
   loss_names:
@@ -107,7 +109,7 @@ trainer:
   device_tensors:
   - data_object
   - labels
-  monitor: min val_eer
+  monitor: min dev_eer
   early_stop: 20
   override: true
 configs: baseline_optimized

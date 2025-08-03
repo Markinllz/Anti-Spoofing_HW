@@ -7,9 +7,16 @@ class AsoftMax(nn.Module):
     Сигмоида loss для anti-spoofing (как в статье).
     """
 
-    def __init__(self, margin=0.2, scale=15):
-        super().__init__()
-        # Параметры игнорируются для простоты
+    def __init__(self, margin=4, scale=30, **kwargs):
+        """
+        Args:
+            margin (float): margin parameter
+            scale (float): scale parameter
+            **kwargs: additional arguments (ignored for simplicity)
+        """
+        super(AsoftMax, self).__init__()
+        self.margin = margin
+        self.scale = scale
 
     def forward(self, batch, **kwargs):
         """
@@ -24,8 +31,9 @@ class AsoftMax(nn.Module):
         logits = batch['logits']
         labels = batch['labels']
         
-        # Правильная сигмоида loss как в статье
-        # Для бинарной классификации используем CrossEntropy с правильной обработкой
-        loss = F.cross_entropy(logits, labels)
+        # Correct sigmoid loss as in paper
+        # For binary classification use CrossEntropy with proper handling
+        if logits.dim() == 1:
+            logits = logits.unsqueeze(0)
         
-        return {"loss": loss}
+        return {"loss": F.cross_entropy(logits, labels)}

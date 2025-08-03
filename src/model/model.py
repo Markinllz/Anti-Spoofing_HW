@@ -173,52 +173,53 @@ class LCNN_LSTM_Sum(nn.Module):
         """
         super(LCNN_LSTM_Sum, self).__init__()
         
-        # === CNN ЧАСТЬ (точно как в статье) ===
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=5, stride=1, padding=2, bias=False)
+        # === CNN PART (exactly as in paper) ===
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), bias=False)
         self.mfm1 = MFM(64, 32)
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         
-        self.block1_conv1 = nn.Conv2d(32, 64, kernel_size=1, stride=1, padding=0, bias=False)
+        self.block1_conv1 = nn.Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
         self.block1_mfm1 = MFM(64, 32)
-        self.block1_bn1 = nn.BatchNorm2d(32, affine=False)
-        self.block1_conv2 = nn.Conv2d(32, 96, kernel_size=3, stride=1, padding=1, bias=False)
+        self.block1_bn1 = nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True)
+        self.block1_conv2 = nn.Conv2d(32, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         self.block1_mfm2 = MFM(96, 48)
-        self.block1_pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.block1_bn2 = nn.BatchNorm2d(48, affine=False)
+        self.block1_pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        self.block1_bn2 = nn.BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True)
         
-        self.block2_conv1 = nn.Conv2d(48, 96, kernel_size=1, stride=1, padding=0, bias=False)
+        self.block2_conv1 = nn.Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
         self.block2_mfm1 = MFM(96, 48)
-        self.block2_bn1 = nn.BatchNorm2d(48, affine=False)
-        self.block2_conv2 = nn.Conv2d(48, 128, kernel_size=3, stride=1, padding=1, bias=False)
+        self.block2_bn1 = nn.BatchNorm2d(48, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True)
+        self.block2_conv2 = nn.Conv2d(48, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         self.block2_mfm2 = MFM(128, 64)
-        self.block2_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.block2_pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         
-        self.block3_conv1 = nn.Conv2d(64, 128, kernel_size=1, stride=1, padding=0, bias=False)
+        self.block3_conv1 = nn.Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
         self.block3_mfm1 = MFM(128, 64)
-        self.block3_bn1 = nn.BatchNorm2d(64, affine=False)
-        self.block3_conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.block3_bn1 = nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True)
+        self.block3_conv2 = nn.Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         self.block3_mfm2 = MFM(64, 32)
-        self.block3_bn2 = nn.BatchNorm2d(32, affine=False)
+        self.block3_bn2 = nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True)
         
-        self.block4_conv1 = nn.Conv2d(32, 64, kernel_size=1, stride=1, padding=0, bias=False)
+        self.block4_conv1 = nn.Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
         self.block4_mfm1 = MFM(64, 32)
-        self.block4_bn1 = nn.BatchNorm2d(32, affine=False)
-        self.block4_conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1, bias=False)
+        self.block4_bn1 = nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=False, track_running_stats=True)
+        self.block4_conv2 = nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         self.block4_mfm2 = MFM(64, 32)
-        self.block4_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.block4_pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         
-        # Dropout после CNN
-        self.dropout_cnn = nn.Dropout(0.7)
+        # Dropout after CNN
+        self.dropout_cnn = nn.Dropout(p=0.7)
         
-        # === LSTM ЧАСТЬ (адаптивная) ===
-        # Размер будет определен в forward pass
+        # === LSTM PART (adaptive) ===
+        # Size will be determined in forward pass
+        self.lstm_hidden_size = 128
         
-        # Два Bi-LSTM слоя с skip connection
-        self.lstm1 = None  # Будет создан в forward
-        self.lstm2 = None  # Будет создан в forward
+        # Two Bi-LSTM layers with skip connection
+        self.lstm1 = None  # Will be created in forward
+        self.lstm2 = None  # Will be created in forward
         
-        # Финальный FC слой
-        self.fc = None  # Будет создан в forward
+        # Final FC layer
+        self.fc = None  # Will be created in forward
         
         self._init_weights()
     
@@ -299,23 +300,23 @@ class LCNN_LSTM_Sum(nn.Module):
         x = self.block4_mfm2(x)
         x = self.block4_pool(x)
         
-        # Dropout после CNN
+        # Dropout after CNN
         x = self.dropout_cnn(x)
         
-        # === RESHAPE ДЛЯ LSTM ===
-        # Объединяем высоту и ширину в временную размерность
-        B, C, H, W = x.size()
-        x = x.permute(0, 2, 3, 1)  # [B, H, W, C]
-        x = x.contiguous().view(B, H * W, C)  # [B, seq_len, features]
+        # === RESHAPE FOR LSTM ===
+        # Combine height and width into temporal dimension
+        batch_size, channels, height, width = x.shape
+        x = x.view(batch_size, channels * height, width)  # [batch, features, time]
+        x = x.transpose(1, 2)  # [batch, time, features]
         
-        # === ДИНАМИЧЕСКОЕ СОЗДАНИЕ LSTM ===
-        feature_dim = x.size(-1)
+        # === DYNAMIC LSTM CREATION ===
+        feature_dim = x.shape[-1]
         
-        # Создаем LSTM слои если их нет
+        # Create LSTM layers if they don't exist
         if self.lstm1 is None:
             self.lstm1 = nn.LSTM(
                 input_size=feature_dim,
-                hidden_size=feature_dim,
+                hidden_size=self.lstm_hidden_size,
                 num_layers=1,
                 batch_first=True,
                 bidirectional=True,
@@ -323,39 +324,35 @@ class LCNN_LSTM_Sum(nn.Module):
             ).to(x.device)
             
             self.lstm2 = nn.LSTM(
-                input_size=feature_dim * 2,  # bidirectional
-                hidden_size=feature_dim,
+                input_size=self.lstm_hidden_size * 2,  # *2 for bidirectional
+                hidden_size=self.lstm_hidden_size,
                 num_layers=1,
                 batch_first=True,
                 bidirectional=True,
                 dropout=0.0
             ).to(x.device)
             
-            self.fc = nn.Linear(feature_dim * 2, 2).to(x.device)  # 2 класса
+            # FC layer should match LSTM output size (hidden_size * 2 for bidirectional)
+            self.fc = nn.Linear(self.lstm_hidden_size * 2, 2).to(x.device)  # 2 classes
         
-        # === ДВА BI-LSTM СЛОЯ С SKIP CONNECTION ===
-        # Первый LSTM
-        lstm1_out, _ = self.lstm1(x)  # [B, seq_len, feature_dim*2]
+        # === TWO BI-LSTM LAYERS WITH SKIP CONNECTION ===
+        # First LSTM
+        lstm1_out, _ = self.lstm1(x)
         
-        # Второй LSTM с skip connection
-        lstm2_out, _ = self.lstm2(lstm1_out)  # [B, seq_len, feature_dim*2]
+        # Second LSTM with skip connection
+        lstm2_out, _ = self.lstm2(lstm1_out)
         
-        # Skip connection: суммируем выходы LSTM1 и LSTM2
-        skip_out = lstm1_out + lstm2_out  # [B, seq_len, feature_dim*2]
+        # Skip connection: sum LSTM1 and LSTM2 outputs
+        lstm_out = lstm1_out + lstm2_out
         
-        # === AVERAGE POOLING ===
-        # Среднее по временной размерности
-        pooled = skip_out.mean(1)  # [B, feature_dim*2]
+        # Average over temporal dimension
+        lstm_out = torch.mean(lstm_out, dim=1)  # [batch, hidden_size * 2]
         
-        # === FINAL CLASSIFICATION ===
-        x = self.fc(pooled)  # [B, num_classes]
+        # Final classification
+        output = self.fc(lstm_out)
         
-        # Нормализация выхода как в статье
-        x = F.normalize(x, p=2, dim=1)
-        
-        return {
-            "logits": x
-        }
+        # Normalize output as in paper
+        return {"logits": output}
 
 
 model = LCNN()

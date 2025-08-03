@@ -1,6 +1,6 @@
 seed: 42
 device: auto
-n_epochs: 200  # Увеличено для лучшей сходимости
+n_epochs: 200  # Increased for better convergence
 save_period: 5
 val_period: 1
 skip_oom: true
@@ -10,6 +10,6 @@ save_dir: checkpoints
 device_tensors:
   - data_object
   - labels
-monitor: min dev_eer
+monitor: min dev_eer  # Changed from val_eer to dev_eer
 early_stop: 20 
 override: True
