@@ -1,20 +1,22 @@
 data_path: ${oc.env:DATA_PATH,data}
 project_name: anti-spoofing
-run_name: baseline-experiment
+run_name: baseline-optimized-experiment
 model:
   _target_: src.model.model.LCNN_LSTM_Sum
   num_classes: 2
   dropout_rate: 0.3
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.0001
+  lr: 0.0003
   weight_decay: 0.0001
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
-  step_size: 20
+  step_size: 10
   gamma: 0.5
 loss_function:
-  _target_: src.loss.crossentropy.CrossEntropyLoss
+  _target_: src.loss.Asoftmax.AsoftMax
+  margin: 4
+  scale: 30
 metrics:
   train:
   - _target_: src.metrics.eer.EERMetric
@@ -46,7 +48,7 @@ datasets:
     instance_transforms: ${transforms.instance_transforms}
 dataloader:
   _target_: torch.utils.data.DataLoader
-  batch_size: 32
+  batch_size: 64
   num_workers: 4
   pin_memory: true
 transforms:
@@ -84,7 +86,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: oxau6aco
+  run_id: iarlc0id
   run_name: training-experiment
   mode: online
   loss_names:
@@ -95,7 +97,7 @@ writer:
 trainer:
   seed: 42
   device: auto
-  n_epochs: 100
+  n_epochs: 200
   save_period: 5
   val_period: 1
   skip_oom: true
@@ -108,3 +110,4 @@ trainer:
   monitor: min val_eer
   early_stop: 20
   override: true
+configs: baseline_optimized

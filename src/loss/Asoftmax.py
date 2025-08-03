@@ -9,17 +9,18 @@ class AsoftMax(nn.Module):
         self.margin = margin
         self.scale = scale
 
-    def forward(self, logits: torch.Tensor, labels: torch.Tensor, **kwargs):
+    def forward(self, batch, **kwargs):
         """
         A-Softmax loss compute
         
         Args:
-            logits (Tensor): model output predictions (batch_size, num_classes)
-            labels (Tensor): ground truth labels (batch_size,)
+            batch (dict): batch containing 'logits' and 'labels'
             **kwargs: дополнительные аргументы (игнорируются)
         Returns:
             losses (dict): dictionary loss
         """
+        logits = batch['logits']
+        labels = batch['labels']
         
         # Нормализуем logits
         logits_norm = F.normalize(logits, p=2, dim=1)
