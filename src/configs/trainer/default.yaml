@@ -1,7 +1,7 @@
 seed: 42
 device: auto
 n_epochs: 100
-save_period: 10
+save_period: 5
 val_period: 1
 skip_oom: true
 max_grad_norm: 0.5
