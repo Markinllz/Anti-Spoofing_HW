@@ -1,5 +1,13 @@
 instance_transforms:
   data_object: ${transforms.lfcc}
+  # Аугментации применяются только к train данным
+  augmentation: ${transforms.augmentations.anti_spoofing}
+
+# Конфигурации аугментаций
+augmentations:
+  anti_spoofing:
+    _target_: src.transforms.augmentations.get_anti_spoofing_augmentations
+    p: 0.5
 
 lfcc:
   _target_: src.transforms.lfcc.LFCCTransform

@@ -1,0 +1,41 @@
+
+defaults:
+  - baseline
+  - _self_
+
+# Переопределяем только вероятность аугментаций для более агрессивного обучения
+transforms:
+  augmentations:
+    anti_spoofing:
+      _target_: src.transforms.augmentations.get_anti_spoofing_augmentations
+      p: 0.7  # Увеличиваем вероятность применения аугментаций
+
+trainer:
+  epochs: 50
+  save_period: 5
+  log_step: 50
+
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.001
+  weight_decay: 0.0001
+
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.StepLR
+  step_size: 10
+  gamma: 0.5
+
+# Убираем переопределение metrics, так как это создает конфликт
+# metrics:
+#   - _target_: src.metrics.eer.EERMetric
+#     name: eer
+
+loss_function:
+  _target_: src.loss.crossentropy.CrossEntropyLoss
+  label_smoothing: 0.1
+
+monitoring:
+  mnt_metric: dev_eer
+  mnt_mode: min
+  mnt_best: inf
+  early_stopping: 15 

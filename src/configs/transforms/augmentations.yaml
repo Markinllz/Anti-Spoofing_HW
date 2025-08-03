@@ -1,0 +1,22 @@
+# 3 основные аугментации для anti-spoofing
+
+# Основная комбинация аугментаций
+anti_spoofing:
+  _target_: src.transforms.augmentations.get_anti_spoofing_augmentations
+  p: 0.5
+
+# Индивидуальные аугментации
+add_noise:
+  _target_: src.transforms.augmentations.AddNoise
+  noise_level_range: [0.001, 0.01]
+  p: 0.5
+
+time_stretch:
+  _target_: src.transforms.augmentations.TimeStretch
+  stretch_factor_range: [0.8, 1.2]
+  p: 0.5
+
+time_masking:
+  _target_: src.transforms.augmentations.TimeMasking
+  mask_ratio_range: [0.1, 0.3]
+  p: 0.5 

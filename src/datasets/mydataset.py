@@ -92,6 +92,11 @@ class AudioSpoofingDataset(BaseDataset):
                 "labels": label
             }
             
+            # Apply augmentations first (if available and only for training)
+            if self.instance_transforms is not None and "augmentation" in self.instance_transforms:
+                augmentation = self.instance_transforms["augmentation"]
+                item_data["data_object"] = augmentation(item_data["data_object"])
+            
             # Apply instance transforms
             if self.instance_transforms is not None:
                 item_data = self._apply_instance_transforms(item_data)
