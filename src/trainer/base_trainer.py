@@ -3,7 +3,6 @@ from abc import abstractmethod
 import torch
 from numpy import inf
 from torch.nn.utils import clip_grad_norm_
-from tqdm.auto import tqdm
 
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
@@ -83,26 +82,23 @@ class BaseTrainer:
             self.epoch_len = epoch_len
 
         self.evaluation_dataloaders = {
-            k: v for k, v in dataloaders.items() if k == "val"  # ТОЛЬКО val, НЕ test!
+            k: v for k, v in dataloaders.items() if k != "train"
         }
-        
-        # test dataloader отдельно - только для финального inference
-        self.test_dataloader = dataloaders.get("test", None)
 
-       
+        # define epochs
         self._last_epoch = 0  # required for saving on interruption
         self.start_epoch = 1
         self.epochs = self.cfg_trainer.n_epochs
 
-      
+        # configuration to monitor model performance and save best
 
         self.save_period = (
             self.cfg_trainer.save_period
-        )  
-        self.val_period = self.cfg_trainer.get("val_period", 1)
+        )  # checkpoint each save_period epochs
         self.monitor = self.cfg_trainer.get(
             "monitor", "off"
-        )  
+        )  # format: "mnt_mode mnt_metric"
+
         if self.monitor == "off":
             self.mnt_mode = "off"
             self.mnt_best = 0
@@ -115,13 +111,14 @@ class BaseTrainer:
             if self.early_stop <= 0:
                 self.early_stop = inf
 
-     
+        # setup visualization writer instance
         self.writer = writer
 
-       
+        # define metrics
         self.metrics = metrics
         self.train_metrics = MetricTracker(
             *self.config.writer.loss_names,
+            "grad_norm",
             *[m.name for m in self.metrics["train"]],
             writer=self.writer,
         )
@@ -131,6 +128,7 @@ class BaseTrainer:
             writer=self.writer,
         )
 
+        # define checkpoint dir and init everything if required
 
         self.checkpoint_dir = (
             ROOT_PATH / config.trainer.save_dir / config.writer.run_name
@@ -167,54 +165,25 @@ class BaseTrainer:
             self._last_epoch = epoch
             result = self._train_epoch(epoch)
 
-          
-            log = {"epoch": epoch}
-            log.update(result)
+            # save logged information into logs dict
+            logs = {"epoch": epoch}
+            logs.update(result)
 
-           
-            val_log = {}
-            if "val" in self.evaluation_dataloaders and (epoch % self.val_period == 0 or epoch == self.epochs):
-                val_results = self._run_validation(epoch, is_mid_epoch=False)
-                
-                
-                val_log = {f"val_{k}": v for k, v in val_results.items()}
-                
-                
-                log.update(val_log)
-
-            # evaluate model performance according to configured metric
-          
-            monitor_logs = val_log if val_log else result
-            best, stop_process, not_improved_count = self._monitor_performance(monitor_logs, not_improved_count=not_improved_count)
-            early_stop_count = not_improved_count
-
-            best_ckpt_path = str(self.checkpoint_dir / "model_best.pth")
-            
-           
-            for key, value in log.items():
+            # print logged information to the screen
+            for key, value in logs.items():
                 self.logger.info(f"    {key:15s}: {value}")
 
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, save_best=False, only_best=False)
+            # evaluate model performance according to configured metric,
+            # save best checkpoint as model_best
+            best, stop_process, not_improved_count = self._monitor_performance(
+                logs, not_improved_count
+            )
 
-            if early_stop_count == 0:
-                print(f"Сохранение лучшей модели: {best_ckpt_path}")
-                self._save_checkpoint(epoch, save_best=True, only_best=True)
+            if epoch % self.save_period == 0 or best:
+                self._save_checkpoint(epoch, save_best=best, only_best=True)
 
-            if early_stop_count >= self.config.trainer.get("early_stop", float("inf")):
-                print(f"Ранняя остановка на эпохе {epoch}")
+            if stop_process:  # early_stop
                 break
-                
-        print(f"\n🎯 Финальная валидация:")
-        if "val" in self.evaluation_dataloaders:
-            final_results = self._run_validation(self.epochs, is_mid_epoch=False, is_final=True)
-        
-        
-        if self.test_dataloader is not None:
-            print(f"\n⚠️ TEST набор доступен для финального inference")
-            print(f"   Используйте inference.py для запуска теста")
-        
-        print(f"\n✅ ОБУЧЕНИЕ ЗАВЕРШЕНО!")
 
     def _train_epoch(self, epoch):
         """
@@ -232,87 +201,95 @@ class BaseTrainer:
         self.train_metrics.reset()
         self.writer.set_step((epoch - 1) * self.epoch_len)
         self.writer.add_scalar("epoch", epoch)
-        for batch_idx, batch in enumerate(
-            tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
-        ):
+        
+        print(f"\n🚀 Эпоха {epoch}/{self.epochs} | Батчей: {self.epoch_len}")
+        
+        # Для накопления метрик за log_step батчей
+        step_losses = []
+        step_eers = []
+        
+        for batch_idx, batch in enumerate(self.train_dataloader):
             try:
                 batch = self.process_batch(
                     batch,
                     metrics=self.train_metrics,
-                    metric_funcs=self.metrics["train"],
                 )
             except torch.cuda.OutOfMemoryError as e:
                 if self.skip_oom:
                     self.logger.warning("OOM on batch. Skipping batch.")
-                    torch.cuda.empty_cache()  
+                    torch.cuda.empty_cache()  # free some memory
                     continue
                 else:
                     raise e
 
+            self.train_metrics.update("grad_norm", self._get_grad_norm())
 
+            # Накапливаем метрики для текущего batch
+            if "loss" in batch:
+                step_losses.append(batch["loss"].item())
+            
+            # Обновляем полоску прогресса каждый батч
+            progress = int(((batch_idx + 1) / self.epoch_len) * 100)
+            filled = int(progress / 5)  # 20 блоков для 100%
+            bar = "█" * filled + "░" * (20 - filled)
+            print(f"\r🚀 Эпоха {epoch} [{bar}] {progress}% ({batch_idx + 1}/{self.epoch_len})", end="")
 
-         
-            if batch_idx % self.log_step == 0:
+            # Логируем и выводим статистику каждые log_step батчей
+            if (batch_idx + 1) % self.log_step == 0:
                 self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
-                print(f"  🏋️ Эпоха {epoch} {self._progress(batch_idx)} - текущий batch_loss: {batch['loss'].item():.6f}")
-                self.logger.debug(
-                    "Train Epoch: {} {} Loss: {:.6f}".format(
-                        epoch, self._progress(batch_idx), batch["loss"].item()
-                    )
-                )
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
                 self._log_scalars(self.train_metrics)
                 self._log_batch(batch_idx, batch)
-                # we don't want to reset train metrics at the start of every epoch
-                # because we are interested in recent train metrics
-                last_train_metrics = self.train_metrics.result()
                 
-                # Выводим текущие метрики в консоль каждые 50 батчей
-                print(f"  📊 Текущие метрики (шаг {batch_idx}):")
-                if "loss" in last_train_metrics:
-                    print(f"    train_loss: {last_train_metrics['loss']:.6f}")
-                if "eer" in last_train_metrics:
-                    print(f"    train_eer: {last_train_metrics['eer']:.6f}")
-                for metric_name, metric_value in last_train_metrics.items():
-                    if metric_name not in ["loss", "eer"]:
-                        print(f"    train_{metric_name}: {metric_value:.6f}")
+                # Получаем текущие метрики
+                current_metrics = self.train_metrics.result()
+                if "eer" in current_metrics:
+                    step_eers.append(current_metrics["eer"])
+                
+                # Вычисляем средние за последние log_step батчей
+                avg_loss = sum(step_losses[-self.log_step:]) / len(step_losses[-self.log_step:]) if step_losses else 0
+                avg_eer = sum(step_eers[-1:]) / len(step_eers[-1:]) if step_eers else 0
+                
+                # Выводим статистику
+                print(f"\n📊 Статистика за батчи {max(0, batch_idx + 1 - self.log_step)}-{batch_idx + 1}:")
+                print(f"    💥 Средний Loss: {avg_loss:.6f}")
+                if avg_eer > 0:
+                    print(f"    📈 EER: {avg_eer:.6f}")
                 
                 self.train_metrics.reset()
-                
-            # ВАЛИДАЦИЯ В СЕРЕДИНЕ ЭПОХИ (на половине эпохи)
-            mid_epoch_step = self.epoch_len // 2
-            if (batch_idx > 0 and 
-                batch_idx == mid_epoch_step and 
-                "val" in self.evaluation_dataloaders):
-                print(f"\n🔄 Переключение на валидацию в середине эпохи...")
-                self._run_validation(epoch, step=batch_idx, is_mid_epoch=True)
-                print(f"🔄 Возврат к обучению...")
-                # Возвращаем модель в режим обучения
-                self.model.train()
-                self.is_train = True
-                
             if batch_idx + 1 >= self.epoch_len:
                 break
-
-        train_results = last_train_metrics
-        print(f"\n🏋️ Тренировочные метрики эпохи {epoch}:")
-        # Выводим loss первым, потом остальные метрики
-        if "loss" in train_results:
-            print(f"    train_loss: {train_results['loss']:.6f}")
-        for metric_name, metric_value in train_results.items():
-            if metric_name != "loss":  # loss уже вывели
-                print(f"    train_{metric_name}: {metric_value:.6f}")
-        print(f"   ✅ Эпоха обучения завершена")
         
-        if self.writer is not None:
-            self.writer.set_step(epoch, "train")
-            for metric_name, metric_value in train_results.items():
-                self.writer.add_scalar(f"train_{metric_name}_epoch", metric_value)
+        # Final progress bar at 100%
+        print(f"\r🚀 Эпоха {epoch} [████████████████████] 100% ({self.epoch_len}/{self.epoch_len}) ✅")
+        
+        # Финальная статистика за всю эпоху
+        if step_losses:
+            epoch_avg_loss = sum(step_losses) / len(step_losses)
+            print(f"📈 Итоги эпохи {epoch}:")
+            print(f"    💥 Средний Loss за эпоху: {epoch_avg_loss:.6f}")
+            if step_eers:
+                epoch_avg_eer = sum(step_eers) / len(step_eers)
+                print(f"    📊 Средний EER за эпоху: {epoch_avg_eer:.6f}")
+        
+        print(f"✅ Эпоха {epoch} завершена!")
 
-        # ⬅️ Возвращаем словарь с метриками эпохи
-        return train_results
+        # Get final train metrics
+        train_logs = self.train_metrics.result()
+        logs = train_logs.copy()
+        
+        # Log train metrics to CometML
+        self.writer.set_step(epoch, "train")  # Исправлено: epoch вместо epoch * self.epoch_len
+        self._log_scalars(self.train_metrics)
+        
+        # Run val/test
+        for part, dataloader in self.evaluation_dataloaders.items():
+            val_logs = self._evaluation_epoch(epoch, part, dataloader)
+            logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
+
+        return logs
 
     def _evaluation_epoch(self, epoch, part, dataloader):
         """
@@ -328,91 +305,49 @@ class BaseTrainer:
         self.is_train = False
         self.model.eval()
         self.evaluation_metrics.reset()
+        print(f"\n🔍 Валидация на {part}...")
         with torch.no_grad():
-            for batch_idx, batch in tqdm(
-                enumerate(dataloader),
-                desc=part,
-                total=len(dataloader),
-            ):
+            total_batches = len(dataloader)
+            for batch_idx, batch in enumerate(dataloader):
+                # Простой прогресс без излишнего вывода
+                progress = int(((batch_idx + 1) / total_batches) * 100)
+                print(f"\r  🔍 Валидация: {progress}% ({batch_idx + 1}/{total_batches})", end="")
                 batch = self.process_batch(
                     batch,
                     metrics=self.evaluation_metrics,
-                    metric_funcs=self.metrics["inference"],
                 )
-            # Логирование по шагам валидации убрано - происходит в _run_validation
-            # с правильными префиксами и step значениями
+            
+            # Final validation progress
+            print(f"\r  🔍 Валидация: 100% ({total_batches}/{total_batches}) ✅")
+            
+            # Log validation metrics to CometML with correct step
+            self.writer.set_step(epoch, part)  # Исправлено: epoch вместо epoch * self.epoch_len
+            self._log_scalars(self.evaluation_metrics)
             self._log_batch(
                 batch_idx, batch, part
-            )  # log only the last batch during inference
+            )
 
-        return self.evaluation_metrics.result()
+        eval_results = self.evaluation_metrics.result()
+        
+        # Print validation results nicely
+        print(f"📈 Результаты валидации {part}:")
+        if "loss" in eval_results:
+            print(f"    Val Loss: {eval_results['loss']:.6f}")
+        if "eer" in eval_results:
+            print(f"    Val EER: {eval_results['eer']:.6f}")
+        for metric_name, metric_value in eval_results.items():
+            if metric_name not in ["loss", "eer"]:
+                print(f"    Val {metric_name}: {metric_value:.6f}")
+        
+        # Также выводим итоговые train метрики для сравнения
+        train_results = self.train_metrics.result()
+        print(f"📊 Итоговые train метрики:")
+        if "loss" in train_results:
+            print(f"    Train Loss: {train_results['loss']:.6f}")
+        if "eer" in train_results:
+            print(f"    Train EER: {train_results['eer']:.6f}")
 
-    def _run_validation(self, epoch, step=None, is_mid_epoch=False, is_final=False):
-        """
-        Запуск валидации с корректным логированием.
-        
-        Args:
-            epoch (int): номер эпохи
-            step (int, optional): номер шага (для валидации в середине эпохи)
-            is_mid_epoch (bool): True если валидация в середине эпохи
-            is_final (bool): True если финальная валидация
-        Returns:
-            val_results (dict): результаты валидации
-        """
-        if "val" not in self.evaluation_dataloaders:
-            return {}
-            
-        # Определяем тип валидации для логирования
-        if is_final:
-            validation_type = "финальная"
-        elif is_mid_epoch:
-            validation_type = "в середине эпохи"
-        else:
-            validation_type = "в конце эпохи"
-            
-        step_info = f" (шаг {step})" if step is not None else ""
-        
-        print(f"\n📊 Валидация {validation_type} {epoch}{step_info}:")
-        
-        val_dataloader = self.evaluation_dataloaders["val"]
-        print(f"   📂 Количество валидационных батчей: {len(val_dataloader)}")
-        
-        val_results = self._evaluation_epoch(epoch, "val", val_dataloader)
-        
-        # Выводим метрики валидации в консоль
-        if is_final:
-            print(f"🎯 Финальные результаты валидации:")
-        else:
-            print(f"📊 Результаты валидации эпохи {epoch}{step_info}:")
-        
-        # Выводим loss первым, потом остальные метрики
-        if "loss" in val_results:
-            print(f"    val_loss: {val_results['loss']:.6f}")
-        for metric_name, metric_value in val_results.items():
-            if metric_name != "loss":  # loss уже вывели
-                print(f"    val_{metric_name}: {metric_value:.6f}")
-        
-        print(f"   ✅ Валидация завершена")
-        
-        # Логируем в writer с правильными префиксами
-        if self.writer is not None:
-            if is_final:
-                # Финальная валидация
-                self.writer.set_step(epoch, "val")
-                for metric_name, metric_value in val_results.items():
-                    self.writer.add_scalar(f"val_{metric_name}_final", metric_value)
-            elif is_mid_epoch and step is not None:
-                # Валидация в середине эпохи - логируем по шагу
-                self.writer.set_step((epoch - 1) * self.epoch_len + step, "val")
-                for metric_name, metric_value in val_results.items():
-                    self.writer.add_scalar(f"val_{metric_name}_mid_epoch", metric_value)
-            else:
-                # Валидация в конце эпохи - логируем по эпохе
-                self.writer.set_step(epoch, "val")
-                for metric_name, metric_value in val_results.items():
-                    self.writer.add_scalar(f"val_{metric_name}_epoch", metric_value)
-        
-        return val_results
+        return eval_results
 
     def _monitor_performance(self, logs, not_improved_count):
         """
@@ -497,14 +432,13 @@ class BaseTrainer:
                 the dataloader (possibly transformed via batch transform).
         """
         # do batch transforms on device
-        if self.batch_transforms is not None:
-            transform_type = "train" if self.is_train else "inference"
-            transforms = self.batch_transforms.get(transform_type)
-            if transforms is not None:
-                for transform_name in transforms.keys():
-                    batch[transform_name] = transforms[transform_name](
-                        batch[transform_name]
-                    )
+        transform_type = "train" if self.is_train else "inference"
+        transforms = self.batch_transforms.get(transform_type)
+        if transforms is not None:
+            for transform_name in transforms.keys():
+                batch[transform_name] = transforms[transform_name](
+                    batch[transform_name]
+                )
         return batch
 
     def _clip_grad_norm(self):
@@ -675,7 +609,7 @@ class BaseTrainer:
             pretrained_path (str): path to the model state dict.
         """
         pretrained_path = str(pretrained_path)
-        if hasattr(self, "logger"):  # to support both trainer and inferencer
+        if hasattr(self, "logger"):
             self.logger.info(f"Loading model weights from: {pretrained_path} ...")
         else:
             print(f"Loading model weights from: {pretrained_path} ...")

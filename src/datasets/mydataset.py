@@ -81,8 +81,8 @@ class AudioSpoofingDataset(BaseDataset):
             return item_data
             
         except Exception as e:
-            # Return zero tensor as fallback
-            fallback_waveform = torch.zeros(1, 16000)  # 1 second of silence at 16kHz
+            # Return zero tensor as fallback - увеличиваем до 4 секунд
+            fallback_waveform = torch.zeros(1, 64000)  # 4 seconds of silence at 16kHz
             print(f"⚠️ Ошибка загрузки аудио {audio_path}: {e}")
             return {
                 "data_object": fallback_waveform,

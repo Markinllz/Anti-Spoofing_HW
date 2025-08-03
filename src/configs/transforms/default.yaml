@@ -1,31 +1,30 @@
 instance_transforms:
-  data_object: ${transforms.stft}
+  data_object: ${transforms.lfcc}
 
-stft:
-  _target_: src.transforms.stft.STFTTransform
-  n_fft: 1724  # Для получения 863 freq bins (1724//2 + 1 = 863)
-  hop_length: 256  # Для лучшего временного разрешения
-  win_length: 1724
+lfcc:
+  _target_: src.transforms.lfcc.LFCCTransform
+  sample_rate: 16000
+  n_fft: 512           # 512-point FFT как в статье
+  hop_length: 160      # 10ms frame shift at 16kHz
+  win_length: 320      # 20ms frame length at 16kHz  
+  n_filter: 20         # 20 linear triangular filters
+  n_lfcc: 20           # 20 cepstral coefficients
+  use_deltas: true     # static + delta + delta-delta = 60-dim
 
 batch_transforms:
   train:
     data_object:
       _target_: torch.nn.Sequential
       _args_:
-        # Логарифмирование спектрограммы - критически важно для аудио
-        - _target_: src.transforms.stft.LogTransform
-          eps: 1e-6
-        # Нормализация логарифмированных значений
+        # Нормализация LFCC признаков (60-мерных)
         - _target_: src.transforms.normalize.Normalize
-          mean: [-4.0]  # Подходящее для log-спектрограмм  
-          std: [4.0]    # Подходящее стандартное отклонение
+          mean: [0.0]  # Подходящее для LFCC признаков  
+          std: [1.0]   # Стандартная нормализация
   inference:
     data_object:
       _target_: torch.nn.Sequential
       _args_:
         # Те же трансформации для inference
-        - _target_: src.transforms.stft.LogTransform
-          eps: 1e-6
         - _target_: src.transforms.normalize.Normalize
-          mean: [-4.0]
-          std: [4.0]
+          mean: [0.0]
+          std: [1.0]

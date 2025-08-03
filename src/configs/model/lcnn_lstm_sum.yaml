@@ -1,0 +1,3 @@
+_target_: src.model.model.LCNN_LSTM_Sum
+num_classes: 2
+dropout_rate: 0.3 

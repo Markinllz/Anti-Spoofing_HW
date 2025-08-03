@@ -2,12 +2,12 @@ data_path: ${oc.env:DATA_PATH,data}
 project_name: anti-spoofing
 run_name: baseline-experiment
 model:
-  _target_: src.model.model.LCNN
+  _target_: src.model.model.LCNN_LSTM_Sum
   num_classes: 2
   dropout_rate: 0.3
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.001
+  lr: 0.0001
   weight_decay: 0.0001
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
@@ -46,17 +46,21 @@ datasets:
     instance_transforms: ${transforms.instance_transforms}
 dataloader:
   _target_: torch.utils.data.DataLoader
-  batch_size: 16
+  batch_size: 32
   num_workers: 4
   pin_memory: true
 transforms:
   instance_transforms:
-    data_object: ${transforms.stft}
-  stft:
-    _target_: src.transforms.stft.STFTTransform
-    n_fft: 1724
-    hop_length: 256
-    win_length: 1724
+    data_object: ${transforms.lfcc}
+  lfcc:
+    _target_: src.transforms.lfcc.LFCCTransform
+    sample_rate: 16000
+    n_fft: 512
+    hop_length: 160
+    win_length: 320
+    n_filter: 20
+    n_lfcc: 20
+    use_deltas: true
   batch_transforms:
     train:
       data_object:
@@ -80,7 +84,7 @@ writer:
   _target_: src.logger.cometml.CometMLWriter
   project_name: anti-spoofing
   workspace: null
-  run_id: 4eydlkzn
+  run_id: qfsbq71k
   run_name: training-experiment
   mode: online
   loss_names:
