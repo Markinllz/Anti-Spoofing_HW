@@ -8,29 +8,29 @@ transforms:
   augmentations:
     anti_spoofing:
       _target_: src.transforms.augmentations.get_anti_spoofing_augmentations
-      p: 0.8  # Увеличиваем аугментации для борьбы с переобучением
+      p: 0.75
 
 trainer:
-  epochs: 30  # Уменьшаем количество эпох
-  save_period: 3  # Более частое сохранение
-  log_step: 100  # Реже логируем
+  epochs: 30  
+  save_period: 3 
+  log_step: 100 
 
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.0001  # Очень медленное обучение
-  weight_decay: 0.005  # Очень сильная регуляризация
+  lr: 0.0001 
+  weight_decay: 0.005  
 
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
-  step_size: 3  # Более частое уменьшение lr
-  gamma: 0.8  # Более плавное уменьшение 
+  step_size: 3  
+  gamma: 0.8  
 
 loss_function:
   _target_: src.loss.crossentropy.CrossEntropyLoss
-  label_smoothing: 0.3  # Максимальный label smoothing
+  label_smoothing: 0.3 
 
 monitoring:
   mnt_metric: dev_eer
   mnt_mode: min
   mnt_best: inf
-  early_stopping: 3  # Очень быстрое раннее остановление
+  early_stopping: 3 
