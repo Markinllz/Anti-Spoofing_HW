@@ -8,7 +8,7 @@ transforms:
   augmentations:
     anti_spoofing:
       _target_: src.transforms.augmentations.get_anti_spoofing_augmentations
-      p: 0.3  # Уменьшаем вероятность применения аугментаций
+      p: 0.1  # Очень низкая вероятность применения аугментаций
 
 trainer:
   epochs: 50
@@ -17,8 +17,8 @@ trainer:
 
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.0005  # Уменьшаем learning rate
-  weight_decay: 0.001  # Увеличиваем weight decay для регуляризации
+  lr: 0.0003  # Еще больше уменьшаем learning rate
+  weight_decay: 0.002  # Увеличиваем weight decay еще больше
 
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
@@ -32,10 +32,10 @@ lr_scheduler:
 
 loss_function:
   _target_: src.loss.crossentropy.CrossEntropyLoss
-  label_smoothing: 0.1
+  label_smoothing: 0.2  # Увеличиваем label smoothing
 
 monitoring:
   mnt_metric: dev_eer
   mnt_mode: min
   mnt_best: inf
-  early_stopping: 10 
+  early_stopping: 5  # Уменьшаем patience для более быстрой остановки 
