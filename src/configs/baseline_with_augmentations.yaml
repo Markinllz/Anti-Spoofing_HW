@@ -3,12 +3,12 @@ defaults:
   - baseline
   - _self_
 
-# Переопределяем только вероятность аугментаций для более агрессивного обучения
+
 transforms:
   augmentations:
     anti_spoofing:
       _target_: src.transforms.augmentations.get_anti_spoofing_augmentations
-      p: 0.1  # Очень низкая вероятность применения аугментаций
+      p: 0.1
 
 trainer:
   epochs: 50
@@ -17,25 +17,20 @@ trainer:
 
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.0003  # Еще больше уменьшаем learning rate
-  weight_decay: 0.002  # Увеличиваем weight decay еще больше
+  lr: 0.0003
+  weight_decay: 0.002
 
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
-  step_size: 5  # Уменьшаем step size
-  gamma: 0.7  # Более плавное уменьшение
-
-# Убираем переопределение metrics, так как это создает конфликт с базовой конфигурацией
-# metrics:
-#   - _target_: src.metrics.eer.EERMetric
-#     name: eer
+  step_size: 5 
+  gamma: 0.7 
 
 loss_function:
   _target_: src.loss.crossentropy.CrossEntropyLoss
-  label_smoothing: 0.2  # Увеличиваем label smoothing
+  label_smoothing: 0.2
 
 monitoring:
   mnt_metric: dev_eer
   mnt_mode: min
   mnt_best: inf
-  early_stopping: 5  # Уменьшаем patience для более быстрой остановки 
+  early_stopping: 5
