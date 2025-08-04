@@ -11,26 +11,26 @@ transforms:
       p: 0.1
 
 trainer:
-  epochs: 50
-  save_period: 5
-  log_step: 50
+  epochs: 30  # Уменьшаем количество эпох
+  save_period: 3  # Более частое сохранение
+  log_step: 100  # Реже логируем
 
 optimizer:
   _target_: torch.optim.Adam
-  lr: 0.0003
-  weight_decay: 0.002
+  lr: 0.0001  # Очень медленное обучение
+  weight_decay: 0.005  # Очень сильная регуляризация
 
 lr_scheduler:
   _target_: torch.optim.lr_scheduler.StepLR
-  step_size: 5 
-  gamma: 0.7 
+  step_size: 3  # Более частое уменьшение lr
+  gamma: 0.8  # Более плавное уменьшение 
 
 loss_function:
   _target_: src.loss.crossentropy.CrossEntropyLoss
-  label_smoothing: 0.2
+  label_smoothing: 0.3  # Максимальный label smoothing
 
 monitoring:
   mnt_metric: dev_eer
   mnt_mode: min
   mnt_best: inf
-  early_stopping: 5
+  early_stopping: 3  # Очень быстрое раннее остановление
