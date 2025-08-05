@@ -210,7 +210,7 @@ class BaseTrainer:
         
         # Accumulate metrics for log_step batches
         step_losses = []
-        step_eers = []
+        # step_eers = []  # Удаляем подсчет EER на батчах
         
         for batch_idx, batch in enumerate(self.train_dataloader):
             try:
@@ -248,19 +248,19 @@ class BaseTrainer:
                 self._log_batch(batch_idx, batch)
                 
                 # Get current metrics
-                current_metrics = self.train_metrics.result()
-                if "eer" in current_metrics:
-                    step_eers.append(current_metrics["eer"])
+                # current_metrics = self.train_metrics.result()
+                # if "eer" in current_metrics:
+                #     step_eers.append(current_metrics["eer"])
                 
                 # Calculate averages for last log_step batches
                 avg_loss = sum(step_losses[-self.log_step:]) / len(step_losses[-self.log_step:]) if step_losses else 0
-                avg_eer = sum(step_eers[-1:]) / len(step_eers[-1:]) if step_eers else 0
+                # avg_eer = sum(step_eers[-1:]) / len(step_eers[-1:]) if step_eers else 0
                 
                 # Output statistics
                 print(f"\nСтатистика за батчи {max(0, batch_idx + 1 - self.log_step)}-{batch_idx + 1}:")
                 print(f"    Средний Loss: {avg_loss:.6f}")
-                if avg_eer > 0:
-                    print(f"    EER: {avg_eer:.6f}")
+                # if avg_eer > 0:
+                #     print(f"    EER: {avg_eer:.6f}")
                 
                 self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
@@ -278,9 +278,10 @@ class BaseTrainer:
             epoch_avg_loss = sum(step_losses) / len(step_losses)
             print(f"Итоги эпохи {epoch}:")
             print(f"    Средний Loss за эпоху: {epoch_avg_loss:.6f}")
-            if step_eers:
-                epoch_avg_eer = sum(step_eers) / len(step_eers)
-                print(f"    Средний EER за эпоху: {epoch_avg_eer:.6f}")
+            # EER только в конце эпохи
+            train_metrics_result = self.train_metrics.result()
+            if "eer" in train_metrics_result:
+                print(f"    EER за эпоху: {train_metrics_result['eer']:.6f}")
         
         print(f"Эпоха {epoch} завершена!")
 
