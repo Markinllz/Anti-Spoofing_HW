@@ -8,7 +8,8 @@ from src.metrics.base_metric import BaseMetric
 class EERMetric(BaseMetric):
     """
     Equal Error Rate (EER) metric for audio anti-spoofing.
-    Использует точно эталонную реализацию из ASVspoof.
+    Uses exact reference implementation from ASVspoof.
+    Accumulates all predictions over epoch and computes EER correctly.
     """
 
     def __init__(self, **kwargs):
@@ -18,35 +19,76 @@ class EERMetric(BaseMetric):
         """
         super(EERMetric, self).__init__()
         self.name = "eer"
+        self.reset()
+
+    def reset(self):
+        """
+        Reset accumulated scores and labels.
+        """
+        self.all_scores = []
+        self.all_labels = []
 
     def __call__(self, batch) -> float:
         """
-        Compute EER metric.
+        Accumulate scores and labels for EER computation.
         
         Args:
             batch: input batch containing scores and labels
             
         Returns:
-            float: EER value
+            float: EER value (computed from all accumulated data)
         """
         if 'scores' in batch:
             scores = batch['scores']
         elif 'logits' in batch:
             logits = batch['logits']
-            # Для бинарной классификации берем вероятность первого класса (bonafide)
+            # For binary classification, take probability of first class (bonafide)
             scores = torch.softmax(logits, dim=1)[:, 0]
         else:
             return 0.0
         
         labels = batch['labels']
         
-        # Проверяем что у нас есть данные
+        # Check that we have data
         if scores.numel() == 0 or labels.numel() == 0:
             return 0.0
         
-        eer, _ = self.compute_eer(scores, labels)
+        # Accumulate scores and labels
+        self.all_scores.extend(scores.detach().cpu().numpy())
+        self.all_labels.extend(labels.detach().cpu().numpy())
         
-        return eer
+        # Compute EER from all accumulated data
+        return self.compute_eer_from_accumulated()
+
+    def compute_eer_from_accumulated(self):
+        """
+        Compute EER from all accumulated scores and labels.
+        
+        Returns:
+            float: EER value
+        """
+        if len(self.all_scores) == 0:
+            return 0.0
+        
+        scores = np.array(self.all_scores)
+        labels = np.array(self.all_labels)
+        
+        # Separate bonafide and spoof scores
+        bonafide_scores = scores[labels == 0]
+        spoof_scores = scores[labels == 1]
+        
+        if len(bonafide_scores) == 0 or len(spoof_scores) == 0:
+            return 0.0
+        
+        # Compute DET curve
+        frr, far, thresholds = self.compute_det_curve(bonafide_scores, spoof_scores)
+        
+        # Find EER point
+        abs_diffs = np.abs(frr - far)
+        min_index = np.argmin(abs_diffs)
+        eer = np.mean((frr[min_index], far[min_index]))
+        
+        return float(eer)
 
     def compute_eer(self, scores: torch.Tensor, labels: torch.Tensor):
         """
@@ -81,7 +123,7 @@ class EERMetric(BaseMetric):
 
     def compute_det_curve(self, target_scores, nontarget_scores):
         """
-        Точная копия эталонной реализации compute_det_curve.
+        Exact copy of reference implementation compute_det_curve.
         
         Args:
             target_scores: scores for bonafide samples  

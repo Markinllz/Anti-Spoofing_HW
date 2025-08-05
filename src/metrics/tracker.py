@@ -9,7 +9,7 @@ class MetricTracker:
     Class to aggregate metrics from many batches.
     """
 
-    def __init__(self, *keys, writer=None):
+    def __init__(self, *keys, writer=None, metrics=None):
         """
         Args:
             *keys (list[str]): list (as positional arguments) of metric
@@ -17,8 +17,10 @@ class MetricTracker:
             writer (WandBWriter | CometMLWriter | None): experiment tracker.
                 Not used in this code version. Can be used to log metrics
                 from each batch.
+            metrics (list): list of metric objects for special handling
         """
         self.writer = writer
+        self.metrics = metrics or []
         self._data = pd.DataFrame(index=keys, columns=["total", "counts", "average"])
         self.reset()
 
@@ -28,6 +30,11 @@ class MetricTracker:
         """
         for col in self._data.columns:
             self._data[col].values[:] = 0
+        
+        # Reset metric objects that have reset method
+        for metric in self.metrics:
+            if hasattr(metric, 'reset'):
+                metric.reset()
 
     def update(self, key, value, n=1):
         """
@@ -38,9 +45,13 @@ class MetricTracker:
             value (float): metric value  
             n (int): number of samples
         """
-        self._data.loc[key, "total"] += value * n
-        self._data.loc[key, "counts"] += n
-        self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
+        # For EER, we don't want to average - we want the final computed value
+        if key == "eer":
+            self._data.loc[key, "average"] = value
+        else:
+            self._data.loc[key, "total"] += value * n
+            self._data.loc[key, "counts"] += n
+            self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
 
     def avg(self, key):
         """

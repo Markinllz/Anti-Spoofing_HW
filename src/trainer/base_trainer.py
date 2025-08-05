@@ -121,11 +121,13 @@ class BaseTrainer:
             "grad_norm",
             *[m.name for m in self.metrics["train"]],
             writer=self.writer,
+            metrics=self.metrics["train"],
         )
         self.evaluation_metrics = MetricTracker(
             *self.config.writer.loss_names,
             *[m.name for m in self.metrics["inference"]],
             writer=self.writer,
+            metrics=self.metrics["inference"],
         )
 
         # define checkpoint dir and init everything if required
@@ -537,7 +539,12 @@ class BaseTrainer:
         if self.writer is None:
             return
         for metric_name in metric_tracker.keys():
-            self.writer.add_scalar(f"{metric_name}", metric_tracker.avg(metric_name))
+            # For EER, use result() instead of avg() since EER is not averaged
+            if metric_name == "eer":
+                value = metric_tracker.result()[metric_name]
+            else:
+                value = metric_tracker.avg(metric_name)
+            self.writer.add_scalar(f"{metric_name}", value)
 
     def _save_checkpoint(self, epoch, save_best=False, only_best=False):
         """
