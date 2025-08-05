@@ -23,7 +23,7 @@ project_name: anti-spoofing-inference
 run_name: inference-test
 
 dataloader:
-  test:
+  eval:
     _target_: torch.utils.data.DataLoader
     batch_size: 32
     num_workers: 4
