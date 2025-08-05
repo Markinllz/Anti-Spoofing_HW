@@ -1,8 +1,8 @@
 train:
   _target_: src.datasets.mydataset.AudioSpoofingDataset
   name: train
-  label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt
-  audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
+  label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt
+  audio_path: ${data_path}/ASVspoof2019_LA_train/flac
   out_path: data/train_index.json
   instance_transforms: ${transforms.instance_transforms}
   
@@ -17,7 +17,7 @@ dev:
 eval:
   _target_: src.datasets.mydataset.AudioSpoofingDataset
   name: eval
-  label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.train.trn.txt
-  audio_path: ${data_path}/ASVspoof2019_LA_train/flac
+  label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt
+  audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
   out_path: data/eval_index.json
   instance_transforms: ${transforms.instance_transforms} 
