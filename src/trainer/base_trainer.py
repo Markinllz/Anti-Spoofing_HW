@@ -270,7 +270,7 @@ class BaseTrainer:
             print(f"Итоги эпохи {epoch}:")
             print(f"    Средний Loss за эпоху: {epoch_avg_loss:.6f}")
             
-            # Логируем loss по эпохам в writer
+            # Логируем loss по эпохам в writer (всегда)
             self.writer.set_step(epoch, "train")
             self.writer.add_scalar("train/loss", epoch_avg_loss)
             self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
@@ -297,12 +297,17 @@ class BaseTrainer:
             # Check if we should evaluate this partition
             should_evaluate = False
             if part == "dev":
-                # Dev evaluation every val_period epochs
-                should_evaluate = (epoch % self.cfg_trainer.val_period == 0)
+                # Dev evaluation: first 10 epochs skip, then every 2 epochs
+                if epoch <= 10:
+                    should_evaluate = False
+                else:
+                    should_evaluate = (epoch % 2 == 0)
             elif part == "eval":
-                # Eval evaluation every eval_period epochs
-                eval_period = getattr(self.cfg_trainer, 'eval_period', 3)  # Default to 3
-                should_evaluate = (epoch % eval_period == 0)
+                # Eval evaluation: first 10 epochs skip, then every 3 epochs
+                if epoch <= 10:
+                    should_evaluate = False
+                else:
+                    should_evaluate = (epoch % 3 == 0)
             else:
                 # For other partitions, evaluate every epoch
                 should_evaluate = True
@@ -349,12 +354,13 @@ class BaseTrainer:
             # Final validation progress
             print(f"\r  {part_display.capitalize()}: 100% ({total_batches}/{total_batches})")
             
-            # Log evaluation metrics to CometML with correct step
-            self.writer.set_step(epoch, part)  # Fixed: epoch instead of epoch * self.epoch_len
-            self._log_scalars(self.evaluation_metrics)
-            self._log_batch(
-                batch_idx, batch, part
-            )
+            # Log evaluation metrics to CometML with correct step (only after epoch 10)
+            if epoch > 10:
+                self.writer.set_step(epoch, part)  # Fixed: epoch instead of epoch * self.epoch_len
+                self._log_scalars(self.evaluation_metrics)
+                self._log_batch(
+                    batch_idx, batch, part
+                )
 
         eval_results = self.evaluation_metrics.result()
         
