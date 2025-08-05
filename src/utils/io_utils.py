@@ -28,5 +28,7 @@ def write_json(content, fname):
         fname (str): filename of the json file.
     """
     fname = Path(fname)
+    # Create parent directories if they don't exist
+    fname.parent.mkdir(parents=True, exist_ok=True)
     with fname.open("wt") as handle:
         json.dump(content, handle, indent=4, sort_keys=False)
