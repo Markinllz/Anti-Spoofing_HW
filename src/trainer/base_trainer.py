@@ -239,20 +239,18 @@ class BaseTrainer:
 
             # Log and output statistics every log_step batches (БЕЗ EER)
             if (batch_idx + 1) % self.log_step == 0:
-                self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
-                self.writer.add_scalar(
-                    "learning rate", self.lr_scheduler.get_last_lr()[0]
-                )
-                # Логируем только loss, НЕ EER
-                self._log_scalars(self.train_metrics)
-                self._log_batch(batch_idx, batch)
-                
                 # Calculate averages for last log_step batches
                 avg_loss = sum(step_losses[-self.log_step:]) / len(step_losses[-self.log_step:]) if step_losses else 0
                 
-                # Output statistics (только loss)
+                # Output statistics (только loss) - выводим в консоль как сейчас
                 print(f"\nСтатистика за батчи {max(0, batch_idx + 1 - self.log_step)}-{batch_idx + 1}:")
                 print(f"    Средний Loss: {avg_loss:.6f}")
+                
+                # НЕ логируем в writer здесь - только выводим в консоль
+                # self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
+                # self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
+                # self._log_scalars(self.train_metrics)
+                # self._log_batch(batch_idx, batch)
                 
                 # Сбрасываем метрики, но НЕ EER
                 self.train_metrics.reset()
@@ -272,6 +270,11 @@ class BaseTrainer:
             print(f"Итоги эпохи {epoch}:")
             print(f"    Средний Loss за эпоху: {epoch_avg_loss:.6f}")
             
+            # Логируем loss по эпохам в writer
+            self.writer.set_step(epoch, "train")
+            self.writer.add_scalar("train/loss", epoch_avg_loss)
+            self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
+            
             # EER только в конце эпохи
             train_metrics_result = self.train_metrics.result()
             if "eer" in train_metrics_result:
@@ -285,14 +288,31 @@ class BaseTrainer:
         train_logs = self.train_metrics.result()
         logs = train_logs.copy()
         
-        # Log train metrics to CometML
-        self.writer.set_step(epoch, "train")  # Fixed: epoch instead of epoch * self.epoch_len
-        self._log_scalars(self.train_metrics)
+        # Log train metrics to CometML (loss уже залогирован выше)
+        # self.writer.set_step(epoch, "train")  # Fixed: epoch instead of epoch * self.epoch_len
+        # self._log_scalars(self.train_metrics)
         
-        # Run dev/eval
+        # Run dev/eval with different periods
         for part, dataloader in self.evaluation_dataloaders.items():
-            val_logs = self._evaluation_epoch(epoch, part, dataloader)
-            logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
+            # Check if we should evaluate this partition
+            should_evaluate = False
+            if part == "dev":
+                # Dev evaluation every val_period epochs
+                should_evaluate = (epoch % self.cfg_trainer.val_period == 0)
+            elif part == "eval":
+                # Eval evaluation every eval_period epochs
+                eval_period = getattr(self.cfg_trainer, 'eval_period', 3)  # Default to 3
+                should_evaluate = (epoch % eval_period == 0)
+            else:
+                # For other partitions, evaluate every epoch
+                should_evaluate = True
+            
+            if should_evaluate:
+                val_logs = self._evaluation_epoch(epoch, part, dataloader)
+                logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
+            else:
+                # Skip evaluation for this partition
+                print(f"Skipping {part} evaluation (not epoch {epoch})")
 
         return logs
 
