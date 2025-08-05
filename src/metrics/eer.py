@@ -33,12 +33,16 @@ class EERMetric(BaseMetric):
             scores = batch['scores']
         elif 'logits' in batch:
             logits = batch['logits']
+            # Для бинарной классификации берем вероятность первого класса (bonafide)
             scores = torch.softmax(logits, dim=1)[:, 0]
         else:
             return 0.0
         
         labels = batch['labels']
         
+        # Проверяем что у нас есть данные
+        if scores.numel() == 0 or labels.numel() == 0:
+            return 0.0
         
         eer, _ = self.compute_eer(scores, labels)
         

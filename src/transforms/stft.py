@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-import torchaudio.transforms as T
+import librosa
+import numpy as np
 
 
 class LogTransform(nn.Module):
@@ -25,51 +26,79 @@ class LogTransform(nn.Module):
 
 class STFTTransform(nn.Module):
     """
-    STFT transform for audio processing.
+    STFT (Short-Time Fourier Transform) transform для anti-spoofing.
+    Использует librosa для извлечения спектрограммы согласно статье.
     """
-
-    def __init__(self, n_fft=512, hop_length=None, win_length=None, **kwargs):
- 
+    
+    def __init__(self, 
+                 sample_rate=16000,
+                 n_fft=512,
+                 hop_length=160,
+                 win_length=320,
+                 **kwargs):
+        """
+        Args:
+            sample_rate (int): Audio sample rate (16000)
+            n_fft (int): FFT size (512)
+            hop_length (int): Frame shift in samples (160 = 10ms at 16kHz)
+            win_length (int): Frame length in samples (320 = 20ms at 16kHz)
+        """
         super(STFTTransform, self).__init__()
         
+        self.sample_rate = sample_rate
         self.n_fft = n_fft
-        self.hop_length = hop_length or n_fft // 4
-        self.win_length = win_length or n_fft
-
+        self.hop_length = hop_length
+        self.win_length = win_length
+    
     def forward(self, audio: torch.Tensor) -> torch.Tensor:
         """
-        Apply STFT to audio signal.
+        Применение STFT трансформации к аудио сигналу.
         
         Args:
-            audio (torch.Tensor): input audio tensor
+            audio (torch.Tensor): входной аудио тензор [batch, samples] или [samples]
             
         Returns:
-            torch.Tensor: STFT spectrogram
+            torch.Tensor: STFT признаки [batch, n_freq_bins, time_frames]
         """
-
         if audio.dim() == 1:
             audio = audio.unsqueeze(0)
         elif audio.dim() == 3:
             audio = audio.squeeze(1)
         
-        # Apply STFT
-        stft_features = torch.stft(
-            audio,
-            n_fft=self.n_fft,
-            hop_length=self.hop_length,
-            win_length=self.win_length,
-            window=self.window,
-            center=self.center,
-            pad_mode=self.pad_mode,
-            power=self.power,
-            normalized=self.normalized,
-            onesided=self.onesided,
-            return_complex=self.return_complex
-        )
+        # Конвертируем в numpy для librosa
+        if isinstance(audio, torch.Tensor):
+            audio_np = audio.detach().cpu().numpy()
+        else:
+            audio_np = audio
         
-        #spectrogram = torch.abs(stft_output)
+        batch_size = audio_np.shape[0]
+        stft_features = []
         
-        return 0
+        for i in range(batch_size):
+            # Извлекаем STFT с librosa
+            stft = librosa.stft(
+                audio_np[i], 
+                n_fft=self.n_fft,
+                hop_length=self.hop_length,
+                win_length=self.win_length,
+                center=True,
+                pad_mode='reflect'
+            )
+            
+            # Берем magnitude spectrum (мощность) - stft это numpy array
+            magnitude = np.abs(stft)
+            
+            # Логарифмируем (log power spectrum как в статье)
+            # Добавляем ε чтобы избежать логарифма от нуля
+            eps = 1e-8
+            log_magnitude = np.log(magnitude + eps)
+            
+            stft_features.append(log_magnitude)
+        
+        # Конвертируем обратно в torch tensor
+        stft_tensor = torch.from_numpy(np.stack(stft_features)).float()
+        
+        return stft_tensor
 
 
 class MelSpectrogramTransform(nn.Module):

@@ -112,10 +112,9 @@ class ComposeAugmentations:
 
 
 # Предустановленные комбинации
-def get_anti_spoofing_augmentations(p: float = 0.5) -> ComposeAugmentations:
-    """3 основные аугментации для anti-spoofing"""
+def get_anti_spoofing_augmentations(p: float = 0.2) -> ComposeAugmentations:
+    """2 основные аугментации для anti-spoofing: шум и маскинг"""
     return ComposeAugmentations([
         AddNoise(noise_level_range=(0.001, 0.01), p=p),
-        TimeStretch(stretch_factor_range=(0.8, 1.2), p=p),
         TimeMasking(mask_ratio_range=(0.1, 0.3), p=p),
     ]) 

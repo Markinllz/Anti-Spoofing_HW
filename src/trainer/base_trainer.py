@@ -210,7 +210,6 @@ class BaseTrainer:
         
         # Accumulate metrics for log_step batches
         step_losses = []
-        # step_eers = []  # Удаляем подсчет EER на батчах
         
         for batch_idx, batch in enumerate(self.train_dataloader):
             try:
@@ -238,30 +237,24 @@ class BaseTrainer:
             bar = "=" * filled + "-" * (20 - filled)
             print(f"\rЭпоха {epoch} [{bar}] {progress}% ({batch_idx + 1}/{self.epoch_len})", end="")
 
-            # Log and output statistics every log_step batches
+            # Log and output statistics every log_step batches (БЕЗ EER)
             if (batch_idx + 1) % self.log_step == 0:
                 self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
+                # Логируем только loss, НЕ EER
                 self._log_scalars(self.train_metrics)
                 self._log_batch(batch_idx, batch)
                 
-                # Get current metrics
-                # current_metrics = self.train_metrics.result()
-                # if "eer" in current_metrics:
-                #     step_eers.append(current_metrics["eer"])
-                
                 # Calculate averages for last log_step batches
                 avg_loss = sum(step_losses[-self.log_step:]) / len(step_losses[-self.log_step:]) if step_losses else 0
-                # avg_eer = sum(step_eers[-1:]) / len(step_eers[-1:]) if step_eers else 0
                 
-                # Output statistics
+                # Output statistics (только loss)
                 print(f"\nСтатистика за батчи {max(0, batch_idx + 1 - self.log_step)}-{batch_idx + 1}:")
                 print(f"    Средний Loss: {avg_loss:.6f}")
-                # if avg_eer > 0:
-                #     print(f"    EER: {avg_eer:.6f}")
                 
+                # Сбрасываем метрики, но НЕ EER
                 self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
                 break
@@ -273,15 +266,18 @@ class BaseTrainer:
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
         
-        # Final statistics for entire epoch
+        # Final statistics for entire epoch (ВКЛЮЧАЯ EER)
         if step_losses:
             epoch_avg_loss = sum(step_losses) / len(step_losses)
             print(f"Итоги эпохи {epoch}:")
             print(f"    Средний Loss за эпоху: {epoch_avg_loss:.6f}")
+            
             # EER только в конце эпохи
             train_metrics_result = self.train_metrics.result()
             if "eer" in train_metrics_result:
                 print(f"    EER за эпоху: {train_metrics_result['eer']:.6f}")
+                # Логируем EER в writer только в конце эпохи
+                self.writer.add_scalar("train/eer", train_metrics_result['eer'])
         
         print(f"Эпоха {epoch} завершена!")
 

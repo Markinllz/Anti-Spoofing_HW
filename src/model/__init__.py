@@ -1,1 +1,1 @@
-from src.model.model import LCNN, LCNN_LSTM_Sum
+from src.model.model import LCNN

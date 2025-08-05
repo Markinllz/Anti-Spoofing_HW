@@ -1,5 +1,5 @@
 instance_transforms:
-  data_object: ${transforms.lfcc}
+  data_object: ${transforms.stft}
   # Аугментации применяются только к train данным
   augmentation: ${transforms.augmentations.anti_spoofing}
 
@@ -7,17 +7,15 @@ instance_transforms:
 augmentations:
   anti_spoofing:
     _target_: src.transforms.augmentations.get_anti_spoofing_augmentations
-    p: 0.5
+    p: 0.2
 
-lfcc:
-  _target_: src.transforms.lfcc.LFCCTransform
+# STFT согласно статье (FFT в статье)
+stft:
+  _target_: src.transforms.stft.STFTTransform
   sample_rate: 16000
   n_fft: 512
-  hop_length: 160
-  win_length: 320
-  n_filter: 20
-  n_lfcc: 20
-  use_deltas: true
+  hop_length: 160  # 10ms при 16kHz
+  win_length: 320  # 20ms при 16kHz
 
 batch_transforms:
   train:

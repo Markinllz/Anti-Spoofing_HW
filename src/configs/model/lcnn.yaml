@@ -1,4 +1,4 @@
 _target_: src.model.model.LCNN
 in_channels: 1
 num_classes: 2
-dropout_rate: 0.7  # Максимальный dropout для борьбы с переобучением 
+dropout_rate: 0.75  # Правильный dropout согласно статье STC 
