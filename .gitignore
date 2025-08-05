@@ -126,4 +126,6 @@ inference-test/
 testing/
 
 # hydra outputs
-outputs/
+outputs/students_solutions/
+best_model/
+data/
