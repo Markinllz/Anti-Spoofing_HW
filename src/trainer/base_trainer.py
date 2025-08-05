@@ -82,7 +82,7 @@ class BaseTrainer:
             self.epoch_len = epoch_len
 
         self.evaluation_dataloaders = {
-            k: v for k, v in dataloaders.items() if k in ["dev", "eval"]
+            k: v for k, v in dataloaders.items() if k in ["eval"]
         }
 
         # define epochs
@@ -206,7 +206,7 @@ class BaseTrainer:
         self.writer.set_step((epoch - 1) * self.epoch_len)
         self.writer.add_scalar("epoch", epoch)
         
-        print(f"\nЭпоха {epoch}/{self.epochs} | Батчей: {self.epoch_len}")
+        print(f"\nEpoch {epoch}/{self.epochs} | Batches: {self.epoch_len}")
         
         # Accumulate metrics for log_step batches
         step_losses = []
@@ -235,82 +235,67 @@ class BaseTrainer:
             progress = int(((batch_idx + 1) / self.epoch_len) * 100)
             filled = int(progress / 5)  # 20 blocks for 100%
             bar = "=" * filled + "-" * (20 - filled)
-            print(f"\rЭпоха {epoch} [{bar}] {progress}% ({batch_idx + 1}/{self.epoch_len})", end="")
+            print(f"\rEpoch {epoch} [{bar}] {progress}% ({batch_idx + 1}/{self.epoch_len})", end="")
 
-            # Log and output statistics every log_step batches (БЕЗ EER)
+            # Log and output statistics every log_step batches (NO EER)
             if (batch_idx + 1) % self.log_step == 0:
                 # Calculate averages for last log_step batches
                 avg_loss = sum(step_losses[-self.log_step:]) / len(step_losses[-self.log_step:]) if step_losses else 0
                 
-                # Output statistics (только loss) - выводим в консоль как сейчас
-                print(f"\nСтатистика за батчи {max(0, batch_idx + 1 - self.log_step)}-{batch_idx + 1}:")
-                print(f"    Средний Loss: {avg_loss:.6f}")
+                # Output statistics (loss only) - output to console as before
+                print(f"\nStatistics for batches {max(0, batch_idx + 1 - self.log_step)}-{batch_idx + 1}:")
+                print(f"    Average Loss: {avg_loss:.6f}")
                 
-                # НЕ логируем в writer здесь - только выводим в консоль
+                # DO NOT log to writer here - only output to console
                 # self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
                 # self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
                 # self._log_scalars(self.train_metrics)
                 # self._log_batch(batch_idx, batch)
                 
-                # Сбрасываем метрики, но НЕ EER
+                # Reset metrics, but NOT EER
                 self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
                 break
         
         # Final progress bar at 100%
-        print(f"\rЭпоха {epoch} [====================] 100% ({self.epoch_len}/{self.epoch_len})")
+        print(f"\rEpoch {epoch} [====================] 100% ({self.epoch_len}/{self.epoch_len})")
         
         # Step the learning rate scheduler at the end of epoch
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
         
-        # Final statistics for entire epoch (ВКЛЮЧАЯ EER)
+        # Final statistics for entire epoch (INCLUDING EER)
         if step_losses:
             epoch_avg_loss = sum(step_losses) / len(step_losses)
-            print(f"Итоги эпохи {epoch}:")
-            print(f"    Средний Loss за эпоху: {epoch_avg_loss:.6f}")
+            print(f"Epoch {epoch} results:")
+            print(f"    Average Loss for epoch: {epoch_avg_loss:.6f}")
             
-            # Логируем loss по эпохам в writer (всегда)
+            # Log loss per epochs in writer (always)
             self.writer.set_step(epoch, "train")
             self.writer.add_scalar("train/loss", epoch_avg_loss)
             self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
             
-            # EER только в конце эпохи
+            # EER only at the end of epoch
             train_metrics_result = self.train_metrics.result()
             if "eer" in train_metrics_result:
-                print(f"    EER за эпоху: {train_metrics_result['eer']:.6f}")
-                # Логируем EER в writer только в конце эпохи
+                print(f"    EER for epoch: {train_metrics_result['eer']:.6f}")
+                # Log EER in writer only at the end of epoch
                 self.writer.add_scalar("train/eer", train_metrics_result['eer'])
         
-        print(f"Эпоха {epoch} завершена!")
+        print(f"Epoch {epoch} completed!")
 
         # Get final train metrics
         train_logs = self.train_metrics.result()
         logs = train_logs.copy()
         
-        # Log train metrics to CometML (loss уже залогирован выше)
+        # Log train metrics to CometML (loss already logged above)
         # self.writer.set_step(epoch, "train")  # Fixed: epoch instead of epoch * self.epoch_len
         # self._log_scalars(self.train_metrics)
         
-        # Run dev/eval with different periods
+        # Run eval evaluation every 2 epochs from the beginning
         for part, dataloader in self.evaluation_dataloaders.items():
             # Check if we should evaluate this partition
-            should_evaluate = False
-            if part == "dev":
-                # Dev evaluation: first 10 epochs skip, then every 2 epochs
-                if epoch <= 10:
-                    should_evaluate = False
-                else:
-                    should_evaluate = (epoch % 2 == 0)
-            elif part == "eval":
-                # Eval evaluation: first 10 epochs skip, then every 3 epochs
-                if epoch <= 10:
-                    should_evaluate = False
-                else:
-                    should_evaluate = (epoch % 3 == 0)
-            else:
-                # For other partitions, evaluate every epoch
-                should_evaluate = True
+            should_evaluate = (epoch % 2 == 0)  # Eval every 2 epochs from the beginning
             
             if should_evaluate:
                 val_logs = self._evaluation_epoch(epoch, part, dataloader)
@@ -337,8 +322,8 @@ class BaseTrainer:
         self.evaluation_metrics.reset()
         
         # Determine correct display name
-        part_display = "валидации" if part == "dev" else "тестирования"
-        print(f"\n{part_display.capitalize()} на {part}...")
+        part_display = "testing"
+        print(f"\n{part_display.capitalize()} on {part}...")
         
         with torch.no_grad():
             total_batches = len(dataloader)
@@ -354,19 +339,18 @@ class BaseTrainer:
             # Final validation progress
             print(f"\r  {part_display.capitalize()}: 100% ({total_batches}/{total_batches})")
             
-            # Log evaluation metrics to CometML with correct step (only after epoch 10)
-            if epoch > 10:
-                self.writer.set_step(epoch, part)  # Fixed: epoch instead of epoch * self.epoch_len
-                self._log_scalars(self.evaluation_metrics)
-                self._log_batch(
-                    batch_idx, batch, part
-                )
+            # Log evaluation metrics to CometML with correct step (always for eval)
+            self.writer.set_step(epoch, part)  # Fixed: epoch instead of epoch * self.epoch_len
+            self._log_scalars(self.evaluation_metrics)
+            self._log_batch(
+                batch_idx, batch, part
+            )
 
         eval_results = self.evaluation_metrics.result()
         
         # Print evaluation results nicely
-        part_prefix = "Dev" if part == "dev" else "Eval"
-        print(f"Результаты {part_display} {part}:")
+        part_prefix = "Eval"
+        print(f"Results of {part_display} {part}:")
         if "loss" in eval_results:
             print(f"    {part_prefix} Loss: {eval_results['loss']:.6f}")
         if "eer" in eval_results:
@@ -377,7 +361,7 @@ class BaseTrainer:
         
         # Also output final train metrics for comparison
         train_results = self.train_metrics.result()
-        print(f"Итоговые train метрики:")
+        print(f"Final train metrics:")
         if "loss" in train_results:
             print(f"    Train Loss: {train_results['loss']:.6f}")
         if "eer" in train_results:

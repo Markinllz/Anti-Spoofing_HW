@@ -1,11 +1,11 @@
-# 2 основные аугментации для anti-spoofing
+# 2 main augmentations for anti-spoofing
 
-# Основная комбинация аугментаций
+# Main augmentation combination
 anti_spoofing:
   _target_: src.transforms.augmentations.get_anti_spoofing_augmentations
   p: 0.2
 
-# Индивидуальные аугментации
+# Individual augmentations
 add_noise:
   _target_: src.transforms.augmentations.AddNoise
   noise_level_range: [0.001, 0.01]

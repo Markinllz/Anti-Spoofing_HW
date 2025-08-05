@@ -26,17 +26,17 @@ class CrossEntropyLoss(nn.Module):
         Returns:
             Dict[str, torch.Tensor]: loss dictionary
         """
-        # Получаем logits и labels
+        # Get logits and labels
         logits = batch['logits']
         labels = batch['labels']
         
-        # Проверяем что размерности корректны для CrossEntropy
+        # Check that dimensions are correct for CrossEntropy
         # logits: [batch_size, num_classes], labels: [batch_size]
         assert logits.dim() == 2, f"Expected logits dim=2, got {logits.dim()}"
         assert labels.dim() == 1, f"Expected labels dim=1, got {labels.dim()}"
         assert logits.size(0) == labels.size(0), "Batch size mismatch"
         
-        # Вычисляем потерю
+        # Calculate loss
         loss = self.criterion(logits, labels)
         
         return {
