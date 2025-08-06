@@ -42,8 +42,8 @@ class EERMetric(BaseMetric):
             scores = batch['scores']
         elif 'logits' in batch:
             logits = batch['logits']
-            # For binary classification, take probability of first class (bonafide)
-            scores = torch.softmax(logits, dim=1)[:, 0]
+            # For binary classification with BCE, use sigmoid
+            scores = torch.sigmoid(logits.squeeze(-1))
         else:
             return 0.0
         
@@ -74,6 +74,7 @@ class EERMetric(BaseMetric):
         labels = np.array(self.all_labels)
         
         # Separate bonafide and spoof scores
+        # labels: 0 = bonafide, 1 = spoof
         bonafide_scores = scores[labels == 0]
         spoof_scores = scores[labels == 1]
         
