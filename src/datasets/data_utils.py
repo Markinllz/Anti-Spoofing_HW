@@ -31,14 +31,19 @@ def move_batch_transforms_to_device(batch_transforms, device):
     in the config (not torchvision.Compose).
 
     Args:
-        batch_transforms (dict[Callable] | None): transforms that
+        batch_transforms (dict[Callable] | nn.Module | None): transforms that
             should be applied on the whole batch. Depend on the
             tensor name.
         device (str): device to use for batch transforms.
     """
     if batch_transforms is None:
         return
+    
+    # If batch_transforms is a class instance (like CollateFn), skip device move
+    if hasattr(batch_transforms, '__call__') and not isinstance(batch_transforms, dict):
+        return
         
+    # Handle dictionary of transforms
     for transform_type in batch_transforms.keys():
         transforms = batch_transforms.get(transform_type)
         if transforms is not None:
@@ -102,16 +107,16 @@ def get_dataloaders(config, device, debug_mode=False):
             f"be larger than the dataset length ({len(dataset)})"
         )
 
-        partition_dataloader = instantiate(
-            config.dataloader,
+        # Create dataloader directly with parameters
+        partition_dataloader = torch.utils.data.DataLoader(
             dataset=dataset,
             batch_size=batch_size,
             num_workers=num_workers,
             pin_memory=pin_memory,
-            collate_fn=collate_fn,
-            drop_last=drop_last,  # In debug mode don't drop data
+            drop_last=drop_last,
             shuffle=shuffle,
             worker_init_fn=set_worker_seed,
+            collate_fn=collate_fn,
         )
         
         dataloaders[dataset_partition] = partition_dataloader

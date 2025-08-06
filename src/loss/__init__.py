@@ -1,1 +1,1 @@
-from src.loss.crossentropy import CrossEntropyLoss
+from src.loss.crossentropy import BCELoss

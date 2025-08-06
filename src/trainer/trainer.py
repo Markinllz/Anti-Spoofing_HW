@@ -38,11 +38,13 @@ class Trainer(BaseTrainer):
         if self.is_train:
             self.optimizer.zero_grad()
 
-        outputs = self.model(batch)
+        # Extract data tensor from batch
+        data_tensor = batch["data_object"]
+        outputs = self.model(data_tensor)
         batch.update(outputs)
 
-        all_losses = self.criterion(batch)
-        batch.update(all_losses)
+        loss = self.criterion(batch["logits"].squeeze(-1), batch["labels"])
+        batch["loss"] = loss
 
         if self.is_train:
             batch["loss"].backward()

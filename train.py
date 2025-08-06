@@ -39,7 +39,17 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, device, debug_mode)
 
     # build model architecture, then print to console
-    model = instantiate(config.model).to(device)
+    model = instantiate(config.model)
+    if hasattr(model, 'to'):
+        model = model.to(device)
+    else:
+        # Try to create model manually
+        from src.model.model import LCNNWithLSTM
+        model = LCNNWithLSTM(
+            in_channels=config.model.model.in_channels,
+            num_classes=config.model.model.num_classes,
+            dropout_rate=config.model.model.dropout_rate
+        ).to(device)
     
     # Count model parameters
     total_params = sum(p.numel() for p in model.parameters())
@@ -61,7 +71,13 @@ def main(config):
         writer.add_scalar("model/trainable_params", trainable_params)
 
     # get function handles of loss and metrics
-    loss_function = instantiate(config.loss_function).to(device)
+    loss_function = instantiate(config.loss_function)
+    if hasattr(loss_function, 'to'):
+        loss_function = loss_function.to(device)
+    else:
+        # Try to create loss function manually
+        from src.loss.crossentropy import BCELoss
+        loss_function = BCELoss().to(device)
     
     metrics = instantiate(config.metrics)
 

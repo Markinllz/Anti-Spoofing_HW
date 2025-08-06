@@ -14,7 +14,6 @@ def collate_fn(dataset_items: list[dict]):
         result_batch (dict[Tensor]): dict, containing batch-version
             of the tensors.
     """
-
     result_batch = {}
 
     # Обработка данных (может быть аудио или спектрограммы после STFT)
@@ -27,10 +26,21 @@ def collate_fn(dataset_items: list[dict]):
         result_batch["labels"] = torch.empty(0, dtype=torch.long)
         return result_batch
     
-    # Проверяем размерности - если 2D, то это спектрограммы, если 1D/2D - аудио
+    # Проверяем размерности - если 3D, то это LFCC признаки
     first_tensor = data_tensors[0]
     
-    if first_tensor.dim() >= 2 and first_tensor.shape[0] > 100:  # Спектрограмма
+    if first_tensor.dim() == 3:  # LFCC признаки: (batch, time, features)
+        # Для LFCC признаков - padding по временной оси (вторая размерность)
+        max_time = max(data.shape[1] for data in data_tensors)
+        
+        padded_data = []
+        for data in data_tensors:
+            if data.shape[1] < max_time:
+                # Pad по времени (вторая размерность)
+                padding = max_time - data.shape[1]
+                data = F.pad(data, (0, 0, 0, padding))  # (left, right, top, bottom)
+            padded_data.append(data)
+    elif first_tensor.dim() >= 2 and first_tensor.shape[0] > 100:  # Спектрограмма
         # Для спектрограмм - padding по временной оси (последняя размерность)
         max_time = max(data.shape[-1] for data in data_tensors)
         
@@ -56,3 +66,15 @@ def collate_fn(dataset_items: list[dict]):
     result_batch["labels"] = torch.tensor([elem["labels"] for elem in dataset_items], dtype=torch.long)
 
     return result_batch
+
+
+class CollateFn:
+    """
+    Wrapper class for collate_fn to be used with Hydra instantiation.
+    """
+    
+    def __init__(self):
+        pass
+    
+    def __call__(self, dataset_items: list[dict]):
+        return collate_fn(dataset_items)

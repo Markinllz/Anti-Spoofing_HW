@@ -1,6 +1,6 @@
 from src.transforms.normalize import Normalize
 from src.transforms.scale import RandomScale1D
-from src.transforms.stft import STFTTransform, MelSpectrogramTransform, LogTransform
+from src.transforms.stft import LFCC, LFB, Spectrogram, STFT
 from src.transforms.augmentations import (
     AddNoise,
     TimeStretch,

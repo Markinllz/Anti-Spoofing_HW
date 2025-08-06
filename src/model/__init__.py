@@ -1,1 +1,1 @@
-from src.model.model import LCNN
+from src.model.model import LCNNWithLSTM

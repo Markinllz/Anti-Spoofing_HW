@@ -1,44 +1,32 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from typing import Dict, Any
 
 
-class CrossEntropyLoss(nn.Module):
+class BCELoss(nn.Module):
     """
-    Cross Entropy Loss for audio anti-spoofing.
+    Binary Cross Entropy Loss with sigmoid activation.
     """
-
+    
     def __init__(self, **kwargs):
+        super(BCELoss, self).__init__()
+        self.criterion = nn.BCEWithLogitsLoss()
+    
+    def forward(self, predictions, targets):
         """
         Args:
-            **kwargs: additional arguments
-        """
-        super(CrossEntropyLoss, self).__init__()
-        self.criterion = nn.CrossEntropyLoss()
-
-    def forward(self, batch) -> Dict[str, torch.Tensor]:
-        """
-        Compute cross entropy loss.
-        
-        Args:
-            batch: input batch containing logits and labels
-            
+            predictions: model predictions (logits)
+            targets: ground truth labels (0 or 1)
         Returns:
-            Dict[str, torch.Tensor]: loss dictionary
+            loss: computed loss value
         """
-        # Get logits and labels
-        logits = batch['logits']
-        labels = batch['labels']
+        if isinstance(predictions, dict):
+            logits = predictions['logits']
+        else:
+            logits = predictions
+            
+        # Ensure targets are float
+        targets = targets.float()
         
-        # Check that dimensions are correct for CrossEntropy
-        # logits: [batch_size, num_classes], labels: [batch_size]
-        assert logits.dim() == 2, f"Expected logits dim=2, got {logits.dim()}"
-        assert labels.dim() == 1, f"Expected labels dim=1, got {labels.dim()}"
-        assert logits.size(0) == labels.size(0), "Batch size mismatch"
-        
-        # Calculate loss
-        loss = self.criterion(logits, labels)
-        
-        return {
-            'loss': loss
-        }
+        return self.criterion(logits, targets)

@@ -1,0 +1,5 @@
+# BCE Loss configuration
+# Binary Cross Entropy Loss with sigmoid activation
+
+loss_function:
+  _target_: src.loss.crossentropy.BCELoss 

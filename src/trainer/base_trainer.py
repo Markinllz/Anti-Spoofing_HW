@@ -434,8 +434,19 @@ class BaseTrainer:
             batch (dict): dict-based batch containing the data from
                 the dataloader with some of the tensors on the device.
         """
-        for tensor_for_device in self.cfg_trainer.device_tensors:
-            batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
+        device_tensors = self.cfg_trainer.device_tensors
+        
+        if not isinstance(batch, dict):
+            return batch
+            
+        if isinstance(device_tensors, str):
+            device_tensors = [device_tensors]
+        elif not isinstance(device_tensors, list):
+            device_tensors = list(device_tensors)
+            
+        for tensor_for_device in device_tensors:
+            if tensor_for_device in batch:
+                batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
 
     def transform_batch(self, batch):
@@ -453,6 +464,10 @@ class BaseTrainer:
             batch (dict): dict-based batch containing the data from
                 the dataloader (possibly transformed via batch transform).
         """
+        # Skip batch transforms if it's not a dict (e.g., CollateFn instance)
+        if not isinstance(self.batch_transforms, dict):
+            return batch
+            
         # do batch transforms on device
         transform_type = "train" if self.is_train else "inference"
         transforms = self.batch_transforms.get(transform_type)
