@@ -74,9 +74,9 @@ class EERMetric(BaseMetric):
         labels = np.array(self.all_labels)
         
         # Separate bonafide and spoof scores
-        # labels: 0 = bonafide, 1 = spoof
-        bonafide_scores = scores[labels == 0]
-        spoof_scores = scores[labels == 1]
+        # labels: 1 = bonafide, 0 = spoof
+        bonafide_scores = scores[labels == 1]
+        spoof_scores = scores[labels == 0]
         
         if len(bonafide_scores) == 0 or len(spoof_scores) == 0:
             return 0.0
@@ -107,8 +107,8 @@ class EERMetric(BaseMetric):
         labels_np = labels.detach().cpu().numpy()
         
        
-        bonafide_scores = scores_np[labels_np == 0]  
-        other_scores = scores_np[labels_np == 1]
+        bonafide_scores = scores_np[labels_np == 1]  
+        other_scores = scores_np[labels_np == 0]
         
      
         if len(bonafide_scores) == 0 or len(other_scores) == 0:

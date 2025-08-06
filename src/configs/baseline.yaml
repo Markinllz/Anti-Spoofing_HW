@@ -25,14 +25,14 @@ trainer:
 
 # Data configuration
 dataloader:
-  batch_size: 16
-  num_workers: 4
+  batch_size: 8
+  num_workers: 2
   pin_memory: True
   drop_last: True
 
 # Model configuration
 model:
-  dropout_rate: 0.75  # As mentioned in the paper
+  dropout_rate: 0.5  # Reduced for stability
 
 # Optimizer configuration
 optimizer:

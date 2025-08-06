@@ -136,7 +136,7 @@ class AudioSpoofingDataset(BaseDataset):
                 parts = line.strip().split()
                 file_id = parts[1]
                 class_name = parts[-1]
-                label = 0 if class_name == "bonafide" else 1  # Fixed typo
+                label = 1 if class_name == "bonafide" else 0  # bonafide = 1, spoof = 0
                 path = str(Path(audio_path) / f"{file_id}.flac")
                 
                 # Проверяем существование файла
