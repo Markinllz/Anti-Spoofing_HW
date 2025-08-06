@@ -62,7 +62,7 @@ class LCNNWithLSTM(nn.Module):
     def __init__(self, in_channels=1, num_classes=1, dropout_rate=0.5):
         super(LCNNWithLSTM, self).__init__()
         
-        # CNN features - exactly as in the image
+        # CNN features - точно как в статье
         self.features = nn.Sequential(
             # Conv_1: 5x5/1x1, output: 863x600x64, 1.6K params
             nn.Conv2d(in_channels, 64, kernel_size=5, stride=1, padding=2),
@@ -126,19 +126,19 @@ class LCNNWithLSTM(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2)
         )
         
-        # FC_29: 160 features - уменьшенный размер для стабильности
-        # Создаем FC слой с меньшим размером
-        target_input_size = 10000  # Уменьшено для стабильности
-        self.fc1 = nn.Linear(target_input_size, 160)
+        # FC слои точно как в статье, но увеличенные для >10M параметров
+        # FC_29: 200 features - увеличенный размер для >10M параметров
+        target_input_size = 62500  # 53*37*32 = 62500 (как в оригинале)
+        self.fc1 = nn.Linear(target_input_size, 200)  # 62500 * 200 = 12.5M параметров
         
-        # MFM_30: 80 features
+        # MFM_30: 100 features
         self.mfm_fc = MaxFeatureMap2D()
         
-        # BatchNorm_31: 80 features
-        self.bn_fc = nn.BatchNorm1d(80, affine=False)
+        # BatchNorm_31: 100 features
+        self.bn_fc = nn.BatchNorm1d(100, affine=False)
         
-        # FC_32: 2 features, 64 params (80 -> 2)
-        self.fc2 = nn.Linear(80, num_classes)
+        # FC_32: 2 features, как в оригинале
+        self.fc2 = nn.Linear(100, num_classes)
         
         # Dropout
         self.dropout = nn.Dropout(dropout_rate)
@@ -170,7 +170,7 @@ class LCNNWithLSTM(nn.Module):
         features = features.view(batch_size, -1)  # (batch_size, flattened_size)
         
         # Pad or truncate to target size (62500)
-        target_input_size = 62500
+        target_input_size = 62500  # 53*37*32 = 62500 (как в оригинале)
         current_size = features.shape[1]
         if current_size < target_input_size:
             # Pad with zeros
@@ -182,16 +182,16 @@ class LCNNWithLSTM(nn.Module):
         
 
         
-        # FC_29: 160 features
+        # FC_29: 200 features
         features = self.dropout(features)
-        features = F.relu(self.fc1(features))  # (batch_size, 160)
+        features = F.relu(self.fc1(features))  # (batch_size, 200)
         
-        # MFM_30: 80 features (reshape for MFM)
-        features = features.unsqueeze(-1).unsqueeze(-1)  # (batch_size, 160, 1, 1)
-        features = self.mfm_fc(features)  # (batch_size, 80, 1, 1)
-        features = features.squeeze(-1).squeeze(-1)  # (batch_size, 80)
+        # MFM_30: 100 features (reshape for MFM)
+        features = features.unsqueeze(-1).unsqueeze(-1)  # (batch_size, 200, 1, 1)
+        features = self.mfm_fc(features)  # (batch_size, 100, 1, 1)
+        features = features.squeeze(-1).squeeze(-1)  # (batch_size, 100)
         
-        # BatchNorm_31: 80 features
+        # BatchNorm_31: 100 features
         features = self.bn_fc(features)
         
         # FC_32: 2 features
