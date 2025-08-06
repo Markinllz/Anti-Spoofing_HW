@@ -34,6 +34,15 @@ class SubmissionInferencer(Inferencer):
         """
         predictions = {}
         
+        # Load eval protocol to get correct trial IDs
+        protocol_path = "data/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt"
+        eval_trial_ids = []
+        with open(protocol_path, "r") as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) >= 2:
+                    eval_trial_ids.append(parts[1])  # trial_id is the second column
+        
         eval_dataloader = None
         for part, dataloader in self.evaluation_dataloaders.items():
             if part == "eval":
@@ -48,7 +57,9 @@ class SubmissionInferencer(Inferencer):
         self.model.eval()
         print(f"Generating predictions for eval dataset...")
         print(f"   Number of batches: {len(eval_dataloader)}")
+        print(f"   Expected trial IDs: {len(eval_trial_ids)}")
         
+        trial_id_idx = 0
         with torch.no_grad():
             for batch_idx, batch in tqdm(
                 enumerate(eval_dataloader),
@@ -58,16 +69,16 @@ class SubmissionInferencer(Inferencer):
                 batch = self.move_batch_to_device(batch)
                 batch = self.transform_batch(batch)
                 
-                outputs = self.model(batch)
+                outputs = self.model(batch["data_object"])
                 
                 logits = outputs["logits"]
-                scores = torch.softmax(logits, dim=1)[:, 1]
+                scores = torch.sigmoid(logits.squeeze(-1))
                 
                 batch_size = logits.shape[0]
-                if "keys" in batch:
-                    keys = batch["keys"]
-                else:
-                    keys = [f"LA_E_{batch_idx}_{i:06d}" for i in range(batch_size)]
+                
+                # Use trial IDs from protocol
+                keys = eval_trial_ids[trial_id_idx:trial_id_idx + batch_size]
+                trial_id_idx += batch_size
                 
                 for i, (key, score) in enumerate(zip(keys, scores)):
                     predictions[key] = score.item()
@@ -97,10 +108,15 @@ def main(config):
     print(f"   Available dataloaders: {list(dataloaders.keys())}")
 
     print("Creating model...")
-    model = instantiate(config.model).to(device)
+    from src.model.model import LCNNWithLSTM
+    model = LCNNWithLSTM(
+        in_channels=1,
+        num_classes=1,
+        dropout_rate=0.5
+    ).to(device)
     print(f"   Model: {type(model).__name__}")
 
-    best_model_path = "best_model/model_best.pth"
+    best_model_path = "bestmodel/checkpoint-epoch6.pth"
     print(f"Loading model from: {best_model_path}")
     
     if os.path.exists(best_model_path):
@@ -154,7 +170,11 @@ def main(config):
 
     print(f"Generated {len(predictions)} predictions")
 
-    output_file = "aabagdasarian.csv"
+    output_file = "students_solutions/aabagdasarian.csv"
+    
+    # Create directory if it doesn't exist
+    os.makedirs("students_solutions", exist_ok=True)
+    
     print(f"Saving predictions to {output_file}...")
     
     with open(output_file, 'w', newline='') as csvfile:

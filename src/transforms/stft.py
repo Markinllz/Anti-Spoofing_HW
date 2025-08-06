@@ -435,3 +435,104 @@ class STFT(nn.Module):
         )
         
         return stft
+
+
+import librosa
+import librosa.display
+
+class MelSpectrogram(nn.Module):
+    """Mel-spectrogram front-end for anti-spoofing using librosa"""
+    def __init__(self, 
+                 sample_rate: int = 16000,
+                 n_fft: int = 512,
+                 hop_length: int = 160,
+                 win_length: int = 320,
+                 n_mels: int = 80,
+                 f_min: float = 0.0,
+                 f_max: Optional[float] = None,
+                 window: str = 'hann',
+                 center: bool = True,
+                 pad_mode: str = 'reflect',
+                 power: float = 2.0,
+                 normalized: bool = False,
+                 with_emphasis: bool = True,
+                 with_delta: bool = False,
+                 in_db: bool = True):
+        super(MelSpectrogram, self).__init__()
+        self.sample_rate = sample_rate
+        self.n_fft = n_fft
+        self.hop_length = hop_length
+        self.win_length = win_length
+        self.n_mels = n_mels
+        self.f_min = f_min
+        self.f_max = f_max if f_max is not None else sample_rate // 2
+        self.window = window
+        self.center = center
+        self.pad_mode = pad_mode
+        self.power = power
+        self.normalized = normalized
+        self.with_emphasis = with_emphasis
+        self.with_delta = with_delta
+        self.in_db = in_db
+        
+    def forward(self, x):
+        """
+        Args:
+            x: input tensor of shape (batch_size, time_steps)
+        Returns:
+            output: mel-spectrogram of shape (batch_size, time_frames, n_mels)
+        """
+        batch_size = x.shape[0]
+        mel_specs = []
+        
+        for i in range(batch_size):
+            # Convert to numpy for librosa
+            audio = x[i].cpu().numpy()
+            
+            # Pre-emphasis
+            if self.with_emphasis:
+                audio = librosa.effects.preemphasis(audio, coef=0.97)
+            
+            # Compute mel-spectrogram using librosa
+            mel_spec = librosa.feature.melspectrogram(
+                y=audio,
+                sr=self.sample_rate,
+                n_fft=self.n_fft,
+                hop_length=self.hop_length,
+                win_length=self.win_length,
+                window=self.window,
+                center=self.center,
+                pad_mode=self.pad_mode,
+                power=self.power,
+                n_mels=self.n_mels,
+                fmin=self.f_min,
+                fmax=self.f_max
+            )
+            
+            # Convert to dB if requested
+            if self.in_db:
+                mel_spec = librosa.power_to_db(mel_spec, ref=np.max)
+            
+            # Transpose to (time_frames, n_mels)
+            mel_spec = mel_spec.T
+            
+            # Add delta features if requested
+            if self.with_delta:
+                delta_features = librosa.feature.delta(mel_spec)
+                mel_spec = np.concatenate([mel_spec, delta_features], axis=1)
+            
+            mel_specs.append(torch.from_numpy(mel_spec).float())
+        
+        # Pad all spectrograms to the same length
+        max_length = max(spec.shape[0] for spec in mel_specs)
+        padded_specs = []
+        
+        for spec in mel_specs:
+            if spec.shape[0] < max_length:
+                # Pad with zeros
+                padding = torch.zeros(max_length - spec.shape[0], spec.shape[1])
+                spec = torch.cat([spec, padding], dim=0)
+            padded_specs.append(spec)
+        
+        # Stack all spectrograms
+        return torch.stack(padded_specs)

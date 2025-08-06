@@ -138,9 +138,8 @@ class EERMetric(BaseMetric):
         labels = np.concatenate(
             (np.ones(target_scores.size), np.zeros(nontarget_scores.size)))
 
-        # Sort labels based on scores (descending for BCE with sigmoid)
-        # Higher scores = bonafide, so we sort in descending order
-        indices = np.argsort(all_scores, kind='mergesort')[::-1]
+        # Sort labels based on scores
+        indices = np.argsort(all_scores, kind='mergesort')
         labels = labels[indices]
 
         # Compute false rejection and false acceptance rates
@@ -153,8 +152,8 @@ class EERMetric(BaseMetric):
             (np.atleast_1d(0), tar_trial_sums / target_scores.size))
         far = np.concatenate((np.atleast_1d(1), nontarget_trial_sums /
                               nontarget_scores.size))  # false acceptance rates
-        # Thresholds are the sorted scores (descending)
+        # Thresholds are the sorted scores
         thresholds = np.concatenate(
-            (np.atleast_1d(all_scores[indices[0]] + 0.001), all_scores[indices]))
+            (np.atleast_1d(all_scores[indices[0]] - 0.001), all_scores[indices]))
 
         return frr, far, thresholds

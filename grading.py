@@ -7,7 +7,7 @@ from calculate_eer import compute_eer
 
 # --- Paths ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROTOCOL_PATH = os.path.join(BASE_DIR, "data", "ASVspoof2019_LA_cm_protocols", "ASVspoof2019.LA.cm.eval.trl.txt")
+PROTOCOL_PATH = os.path.join(BASE_DIR, "ASVspoof2019.LA.cm.eval.trl.txt")
 SOLUTIONS_DIR = os.path.join(BASE_DIR, "students_solutions")
 OUTPUT_CSV = os.path.join(BASE_DIR, "grades.csv")
 

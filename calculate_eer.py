@@ -159,7 +159,7 @@ def compute_eer(bonafide_scores, other_scores):
     abs_diffs = np.abs(frr - far)
     min_index = np.argmin(abs_diffs)
     eer = np.mean((frr[min_index], far[min_index]))
-    return 1 - eer, thresholds[min_index]
+    return eer, thresholds[min_index]
 
 
 def compute_tDCF(bonafide_score_cm, spoof_score_cm, Pfa_asv, Pmiss_asv,
