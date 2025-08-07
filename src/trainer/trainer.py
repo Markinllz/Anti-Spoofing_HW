@@ -46,9 +46,10 @@ class Trainer(BaseTrainer):
         loss = self.criterion(batch["logits"], batch["labels"])
         batch["loss"] = loss
 
-        # Store predictions for explicit metric calculation
-        batch["predictions"] = outputs
-        batch["labels"] = batch["labels"]
+        # Debug: check logits values
+        if self.is_train and hasattr(self, 'batch_idx') and self.batch_idx % 100 == 0:  # Print every 100 batches
+            logits = batch["logits"]
+            print(f"  Debug logits: min={logits.min().item():.4f}, max={logits.max().item():.4f}, mean={logits.mean().item():.4f}")
 
         if self.is_train:
             batch["loss"].backward()
@@ -56,11 +57,17 @@ class Trainer(BaseTrainer):
             self.optimizer.step()
             # LR scheduler step moved to end of epoch in base_trainer.py
 
-        for loss_name in self.config.writer.loss_names:
-            metrics.update(loss_name, batch[loss_name].item())
+        # Store predictions for explicit calculation
+        batch["predictions"] = outputs
+        batch["labels"] = batch["labels"]
 
-        for met in metric_funcs:
-            metrics.update(met.name, met(batch))
+        # Only update metrics if metrics is not None
+        if metrics is not None:
+            for loss_name in self.config.writer.loss_names:
+                metrics.update(loss_name, batch[loss_name].item())
+
+            for met in metric_funcs:
+                metrics.update(met.name, met(batch))
 
         return batch
 

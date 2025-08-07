@@ -214,6 +214,9 @@ class BaseTrainer:
         step_losses = []
         
         for batch_idx, batch in enumerate(self.train_dataloader):
+            # Set batch_idx for debug purposes
+            self.batch_idx = batch_idx
+            
             try:
                 batch = self.process_batch(
                     batch,
@@ -337,9 +340,13 @@ class BaseTrainer:
                 progress = int(((batch_idx + 1) / total_batches) * 100)
                 print(f"\r  {part_display.capitalize()}: {progress}% ({batch_idx + 1}/{total_batches})", end="")
                 
+                # Set batch_idx for debug purposes
+                self.batch_idx = batch_idx
+                
                 batch = self.process_batch(
                     batch,
-                    metrics=None,  # Don't use metrics tracker
+                    metrics=None,  # Don't use metrics tracker for evaluation
+                    metric_funcs=None
                 )
                 
                 # Store for explicit calculation
@@ -731,12 +738,31 @@ class BaseTrainer:
         bonafide_scores = scores_np[labels_np == 1]
         spoof_scores = scores_np[labels_np == 0]
         
+        # Debug information
+        print(f"Debug EER calculation:")
+        print(f"  Total samples: {len(scores_np)}")
+        print(f"  Bonafide samples: {len(bonafide_scores)}")
+        print(f"  Spoof samples: {len(spoof_scores)}")
+        if len(bonafide_scores) > 0:
+            print(f"  Bonafide scores range: [{np.min(bonafide_scores):.4f}, {np.max(bonafide_scores):.4f}]")
+            print(f"  Bonafide mean: {np.mean(bonafide_scores):.4f}")
+        if len(spoof_scores) > 0:
+            print(f"  Spoof scores range: [{np.min(spoof_scores):.4f}, {np.max(spoof_scores):.4f}]")
+            print(f"  Spoof mean: {np.mean(spoof_scores):.4f}")
+        
+        # Check if scores are all the same (model not trained)
+        if np.std(scores_np) < 1e-6:
+            print(f"  WARNING: All scores are the same! Model may not be trained properly.")
+        
         if len(bonafide_scores) == 0 or len(spoof_scores) == 0:
+            print(f"  ERROR: No bonafide or spoof samples!")
             return {'loss': avg_loss, 'eer': 0.0}
         
         # Calculate EER using explicit function
         from src.metrics.eer import EERMetric
         eer_metric = EERMetric()
         eer, _ = eer_metric.compute_eer_from_arrays(bonafide_scores, spoof_scores)
+        
+        print(f"  Calculated EER: {eer:.6f}")
         
         return {'loss': avg_loss, 'eer': float(eer)}
