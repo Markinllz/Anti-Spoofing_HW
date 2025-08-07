@@ -54,14 +54,14 @@ class MaxFeatureMap2D(nn.Module):
         return m
 
 
-class LCNNWithLSTM(nn.Module):
+class LCNN(nn.Module):
     """
-    LCNN with LSTM layers for variable length inputs
-    Architecture exactly as shown in the image with 371K parameters
+    LCNN architecture for anti-spoofing
+    Architecture exactly as shown in the paper with 371K parameters
     """
     
-    def __init__(self, in_channels=1, num_classes=1, dropout_rate=0.5):
-        super(LCNNWithLSTM, self).__init__()
+    def __init__(self, in_channels=1, num_classes=2, dropout_rate=0.5):
+        super(LCNN, self).__init__()
         
         # CNN features - exactly as in the paper
         self.features = nn.Sequential(

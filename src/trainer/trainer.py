@@ -43,7 +43,7 @@ class Trainer(BaseTrainer):
         outputs = self.model(data_tensor)
         batch.update(outputs)
 
-        loss = self.criterion(batch["logits"].squeeze(-1), batch["labels"])
+        loss = self.criterion(batch["logits"], batch["labels"])
         batch["loss"] = loss
 
         if self.is_train:

@@ -44,8 +44,8 @@ def main(config):
         model = model.to(device)
     else:
         # Try to create model manually
-        from src.model.model import LCNNWithLSTM
-        model = LCNNWithLSTM(
+        from src.model.model import LCNN
+        model = LCNN(
             in_channels=config.model.model.in_channels,
             num_classes=config.model.model.num_classes,
             dropout_rate=config.model.model.dropout_rate
@@ -71,13 +71,14 @@ def main(config):
         writer.add_scalar("model/trainable_params", trainable_params)
 
     # get function handles of loss and metrics
-    loss_function = instantiate(config.loss_function)
+    print(f"Loss function config: {config.loss_function}")
+    loss_function = instantiate(config.loss_function.loss_function)
     if hasattr(loss_function, 'to'):
         loss_function = loss_function.to(device)
     else:
         # Try to create loss function manually
-        from src.loss.crossentropy import BCELoss
-        loss_function = BCELoss().to(device)
+        from src.loss.msep2sgrad import MSEP2SGRADLoss
+        loss_function = MSEP2SGRADLoss().to(device)
     
     metrics = instantiate(config.metrics)
 

@@ -1,8 +1,8 @@
-# Mel-spectrogram + LCNN configuration
+# LFCC + LCNN + P2SGradLoss configuration
 # Based on ASVspoof2019 paper architecture
 
 defaults:
-  - model: lcnn_lstm
+  - model: lcnn
   - transforms: lfcc
   - loss_function: msep2sgrad
   - optimizer: adam
@@ -21,6 +21,7 @@ trainer:
   log_step: 100
   monitor: min eval_eer
   early_stop: 20  # Increased early stopping
+  max_grad_norm: 1.0  # Add gradient clipping for stability
   seed: 42
 
 # Data configuration
@@ -36,7 +37,7 @@ model:
 
 # Optimizer configuration
 optimizer:
-  lr: 1e-4  # Reduced learning rate
+  lr: 3e-4  # Original learning rate from paper
   weight_decay: 1e-4
 
 # Learning rate scheduler

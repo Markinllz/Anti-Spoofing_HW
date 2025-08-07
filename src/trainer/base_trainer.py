@@ -184,8 +184,8 @@ class BaseTrainer:
             if epoch % self.save_period == 0 or best:
                 self._save_checkpoint(epoch, save_best=best, only_best=True)
             
-            # Additional save to my_model.pth every 7 epochs
-            if epoch % 7 == 0:
+            # Additional save to my_model.pth every 5 epochs
+            if epoch % 5 == 0:
                 self._save_my_model(epoch)
 
             if stop_process:  # early_stop

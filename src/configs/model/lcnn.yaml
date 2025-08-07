@@ -1,0 +1,8 @@
+# LCNN configuration
+# For P2SGradLoss with cosine angles (2 classes: bonafide, spoof)
+
+model:
+  _target_: src.model.model.LCNN
+  in_channels: 1
+  num_classes: 2  # Two classes for P2SGradLoss
+  dropout_rate: 0.5 

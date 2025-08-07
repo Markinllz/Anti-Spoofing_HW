@@ -1,8 +1,0 @@
-# LCNN with LSTM configuration
-# Simplified for binary classification with sigmoid
-
-model:
-  _target_: src.model.model.LCNNWithLSTM
-  in_channels: 1
-  num_classes: 1  # Binary classification
-  dropout_rate: 0.5 

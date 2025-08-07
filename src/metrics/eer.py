@@ -42,9 +42,12 @@ class EERMetric(BaseMetric):
             scores = batch['scores']
         elif 'logits' in batch:
             logits = batch['logits']
-            # For P2SGradLoss, logits are already cosine angles in [-1, 1] range
-            # No sigmoid needed, just use the cosine angles directly
-            scores = logits.squeeze(-1)
+            # For P2SGradLoss, logits are cosine angles in [-1, 1] range
+            # We need to extract the bonafide score (first column) for EER calculation
+            # Higher cosine angle = higher probability of being bonafide
+            scores = logits[:, 0]  # Take first column as bonafide score
+            # Convert from [-1, 1] to [0, 1] range for EER
+            scores = (scores + 1) / 2
         else:
             return 0.0
         
