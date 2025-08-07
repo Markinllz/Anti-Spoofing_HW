@@ -1,0 +1,5 @@
+# MSEP2SGRAD Loss configuration
+# P2SGradLoss with cosine angles
+
+loss_function:
+  _target_: src.loss.msep2sgrad.MSEP2SGRADLoss 

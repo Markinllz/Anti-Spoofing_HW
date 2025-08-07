@@ -42,8 +42,9 @@ class EERMetric(BaseMetric):
             scores = batch['scores']
         elif 'logits' in batch:
             logits = batch['logits']
-            # For binary classification with BCE, use sigmoid
-            scores = torch.sigmoid(logits.squeeze(-1))
+            # For P2SGradLoss, logits are already cosine angles in [-1, 1] range
+            # No sigmoid needed, just use the cosine angles directly
+            scores = logits.squeeze(-1)
         else:
             return 0.0
         
@@ -96,8 +97,8 @@ class EERMetric(BaseMetric):
         Returns equal error rate (EER) and the corresponding threshold.
         
         Args:
-            scores (torch.Tensor): prediction scores (probability of bonafide)
-            labels (torch.Tensor): ground truth labels (0 = bonafide, 1 = spoof)
+            scores (torch.Tensor): prediction scores (cosine angles for P2SGradLoss)
+            labels (torch.Tensor): ground truth labels (0 = spoof, 1 = bonafide)
             
         Returns:
             tuple: (eer, threshold)

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from src.loss.msep2sgrad import P2SActivationLayer
 
 
 class MaxFeatureMap2D(nn.Module):
@@ -138,7 +139,8 @@ class LCNNWithLSTM(nn.Module):
         self.bn_fc = nn.BatchNorm1d(80, affine=False)
         
         # FC_32: 2 features, as in original
-        self.fc2 = nn.Linear(80, num_classes)
+        # Use P2SActivationLayer instead of Linear for cosine angle output
+        self.fc2 = P2SActivationLayer(80, num_classes)
         
         # Dropout
         self.dropout = nn.Dropout(dropout_rate)
@@ -194,11 +196,12 @@ class LCNNWithLSTM(nn.Module):
         # BatchNorm_31: 80 features
         features = self.bn_fc(features)
         
-        # FC_32: 2 features
+        # FC_32: 2 features (cosine angles)
         features = self.dropout(features)
-        logits = self.fc2(features)  # (batch_size, num_classes)
+        logits = self.fc2(features)  # (batch_size, num_classes) - cosine angles
         
-        # Apply sigmoid for binary classification
-        probs = torch.sigmoid(logits)
+        # For P2SGradLoss, we return cosine angles directly
+        # No sigmoid needed as we're using cosine angles
+        probs = logits  # cosine angles are already in [-1, 1] range
         
         return {"logits": logits, "probs": probs}
