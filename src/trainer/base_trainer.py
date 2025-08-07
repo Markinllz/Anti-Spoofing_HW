@@ -303,6 +303,10 @@ class BaseTrainer:
         train_logs = self.train_metrics.result()
         logs = train_logs.copy()
         
+        # Override EER with the correctly computed value
+        if step_losses:
+            logs['eer'] = train_eer  # Use the correctly computed EER
+        
         # Log train metrics to CometML (loss already logged above)
         # self.writer.set_step(epoch, "train")  # Fixed: epoch instead of epoch * self.epoch_len
         # self._log_scalars(self.train_metrics)
@@ -723,7 +727,6 @@ class BaseTrainer:
                 if 'logits' in batch_pred:
                     logits = batch_pred['logits']
                 else:
-                    print(f"    WARNING: No logits in batch_pred dict! Keys: {list(batch_pred.keys())}")
                     continue  # Skip this batch
             else:
                 # batch_pred is already logits tensor
@@ -757,18 +760,6 @@ class BaseTrainer:
         bonafide_scores = scores_np[labels_np == 1]
         spoof_scores = scores_np[labels_np == 0]
         
-        # Debug information
-        print(f"Debug EER calculation:")
-        print(f"  Total samples: {len(scores_np)}")
-        print(f"  Bonafide samples: {len(bonafide_scores)}")
-        print(f"  Spoof samples: {len(spoof_scores)}")
-        if len(bonafide_scores) > 0:
-            print(f"  Bonafide scores range: [{np.min(bonafide_scores):.4f}, {np.max(bonafide_scores):.4f}]")
-            print(f"  Bonafide mean: {np.mean(bonafide_scores):.4f}")
-        if len(spoof_scores) > 0:
-            print(f"  Spoof scores range: [{np.min(spoof_scores):.4f}, {np.max(spoof_scores):.4f}]")
-            print(f"  Spoof mean: {np.mean(spoof_scores):.4f}")
-        
         # Check if scores are all the same (model not trained)
         if np.std(scores_np) < 1e-6:
             print(f"  WARNING: All scores are the same! Model may not be trained properly.")
@@ -781,13 +772,5 @@ class BaseTrainer:
         from src.metrics.eer import EERMetric
         eer_metric = EERMetric()
         eer, _ = eer_metric.compute_eer_from_arrays(bonafide_scores, spoof_scores)
-        
-        print(f"  Calculated EER: {eer:.6f}")
-        
-        # Additional debug: check if eer is reasonable
-        if eer < 1e-6:
-            print(f"  WARNING: EER is very small ({eer:.6f}), this might indicate a problem!")
-            print(f"  Bonafide scores std: {np.std(bonafide_scores):.6f}")
-            print(f"  Spoof scores std: {np.std(spoof_scores):.6f}")
         
         return {'loss': avg_loss, 'eer': float(eer)}

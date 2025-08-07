@@ -46,10 +46,7 @@ class Trainer(BaseTrainer):
         loss = self.criterion(batch["logits"], batch["labels"])
         batch["loss"] = loss
 
-        # Debug: check logits values
-        if self.is_train and hasattr(self, 'batch_idx') and self.batch_idx % 100 == 0:  # Print every 100 batches
-            logits = batch["logits"]
-            print(f"  Debug logits: min={logits.min().item():.4f}, max={logits.max().item():.4f}, mean={logits.mean().item():.4f}")
+
 
         if self.is_train:
             batch["loss"].backward()
@@ -62,7 +59,6 @@ class Trainer(BaseTrainer):
         if "logits" in batch:
             batch["predictions"] = batch["logits"]
         else:
-            print(f"  WARNING: No logits in batch! Available keys: {list(batch.keys())}")
             batch["predictions"] = torch.zeros(batch["labels"].shape[0], 1)  # Fallback
         # Labels are already in batch
 
