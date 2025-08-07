@@ -212,6 +212,8 @@ class BaseTrainer:
         
         # Accumulate metrics for log_step batches
         step_losses = []
+        all_train_predictions = []
+        all_train_labels = []
         
         for batch_idx, batch in enumerate(self.train_dataloader):
             # Set batch_idx for debug purposes
@@ -236,6 +238,10 @@ class BaseTrainer:
             if "loss" in batch:
                 step_losses.append(batch["loss"].item())
             
+            # Store predictions for EER calculation
+            all_train_predictions.append(batch["predictions"])
+            all_train_labels.append(batch["labels"])
+            
             # Update progress bar each batch
             progress = int(((batch_idx + 1) / self.epoch_len) * 100)
             filled = int(progress / 5)  # 20 blocks for 100%
@@ -257,7 +263,9 @@ class BaseTrainer:
                 # self._log_scalars(self.train_metrics)
                 # self._log_batch(batch_idx, batch)
                 
-                # Reset metrics, but NOT EER
+                # Reset metrics, but keep EER accumulation
+                # Don't reset EER metric - let it accumulate over the entire epoch
+                # We'll handle EER separately at the end of epoch
                 self.train_metrics.reset()
             if batch_idx + 1 >= self.epoch_len:
                 break
@@ -280,12 +288,13 @@ class BaseTrainer:
             self.writer.add_scalar("train/loss", epoch_avg_loss)
             self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
             
-            # EER only at the end of epoch
-            train_metrics_result = self.train_metrics.result()
-            if "eer" in train_metrics_result:
-                print(f"    EER for epoch: {train_metrics_result['eer']:.6f}")
-                # Log EER in writer only at the end of epoch
-                self.writer.add_scalar("train/eer", train_metrics_result['eer'])
+            # EER only at the end of epoch - compute from all predictions
+            # Compute EER from all training predictions
+            train_metrics = self._calculate_explicit_metrics(all_train_predictions, all_train_labels)
+            train_eer = train_metrics['eer']
+            print(f"    EER for epoch: {train_eer:.6f}")
+            # Log EER in writer only at the end of epoch
+            self.writer.add_scalar("train/eer", train_eer)
         
         print(f"Epoch {epoch} completed!")
 
@@ -764,5 +773,11 @@ class BaseTrainer:
         eer, _ = eer_metric.compute_eer_from_arrays(bonafide_scores, spoof_scores)
         
         print(f"  Calculated EER: {eer:.6f}")
+        
+        # Additional debug: check if eer is reasonable
+        if eer < 1e-6:
+            print(f"  WARNING: EER is very small ({eer:.6f}), this might indicate a problem!")
+            print(f"  Bonafide scores std: {np.std(bonafide_scores):.6f}")
+            print(f"  Spoof scores std: {np.std(spoof_scores):.6f}")
         
         return {'loss': avg_loss, 'eer': float(eer)}

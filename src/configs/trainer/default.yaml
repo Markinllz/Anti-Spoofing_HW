@@ -10,6 +10,6 @@ save_dir: models
 device_tensors:
   - data_object
   - labels
-monitor: min eval_eer  # Monitor eval EER for best model saving
+monitor: min eer  # Monitor eval EER for best model saving
 early_stop: 20 
 override: True

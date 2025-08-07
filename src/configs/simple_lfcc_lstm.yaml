@@ -19,7 +19,7 @@ trainer:
   eval_period: 2
   save_period: 10
   log_step: 100
-  monitor: min eval_eer
+  monitor: min eer
   early_stop: 10
 
 # Data configuration

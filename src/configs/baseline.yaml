@@ -19,7 +19,7 @@ trainer:
   eval_period: 2
   save_period: 5  # Save model every 5 epochs
   log_step: 100
-  monitor: min eval_eer
+  monitor: min eer
   early_stop: 20  # Increased early stopping
   max_grad_norm: 1.0  # Add gradient clipping for stability
   seed: 42
