@@ -128,5 +128,4 @@ testing/
 # hydra outputs
 outputs/students_solutions/
 best_model/
-bestmodel/
 data/
