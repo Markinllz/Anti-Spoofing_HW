@@ -199,7 +199,6 @@ class LCNN(nn.Module):
         features = self.dropout(features)
         logits = self.fc2(features)  # (batch_size, 1) - logits before sigmoid
         
-        # Apply sigmoid for probabilities
-        probs = torch.sigmoid(logits)
-        
-        return {"logits": logits, "probs": probs}
+        # For BCEWithLogitsLoss, we return logits without sigmoid
+        # The loss function will apply sigmoid internally
+        return {"logits": logits}

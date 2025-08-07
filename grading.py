@@ -3,7 +3,7 @@ import csv
 import numpy as np
 from copy import deepcopy
 
-from calculate_eer import compute_eer
+from src.metrics.eer import EERMetric
 
 # --- Paths ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,7 +55,10 @@ for filename in os.listdir(SOLUTIONS_DIR):
         # Compute EER
         bona_cm = scores[labels == 1]
         spoof_cm = scores[labels == 0]
-        eer, _ = compute_eer(bona_cm, spoof_cm)
+        
+        # Use the same EER computation as in training
+        eer_metric = EERMetric()
+        eer, _ = eer_metric.compute_eer_from_arrays(bona_cm, spoof_cm)
 
         eer *= 100 # in %
 

@@ -92,37 +92,6 @@ class EERMetric(BaseMetric):
         
         return float(eer)
 
-    def compute_eer(self, scores: torch.Tensor, labels: torch.Tensor):
-        """
-        Returns equal error rate (EER) and the corresponding threshold.
-        
-        Args:
-            scores (torch.Tensor): prediction scores (cosine angles for P2SGradLoss)
-            labels (torch.Tensor): ground truth labels (0 = spoof, 1 = bonafide)
-            
-        Returns:
-            tuple: (eer, threshold)
-        """
-       
-        scores_np = scores.detach().cpu().numpy()
-        labels_np = labels.detach().cpu().numpy()
-        
-       
-        bonafide_scores = scores_np[labels_np == 1]  
-        other_scores = scores_np[labels_np == 0]
-        
-     
-        if len(bonafide_scores) == 0 or len(other_scores) == 0:
-            return 0.0, 0.0
-        
-       
-        frr, far, thresholds = self.compute_det_curve(bonafide_scores, other_scores)
-        abs_diffs = np.abs(frr - far)
-        min_index = np.argmin(abs_diffs)
-        eer = np.mean((frr[min_index], far[min_index]))
-        
-        return float(eer), float(thresholds[min_index])
-
     def compute_det_curve(self, target_scores, nontarget_scores):
         """
         Compute DET curve for EER calculation.
@@ -158,3 +127,55 @@ class EERMetric(BaseMetric):
             (np.atleast_1d(all_scores[indices[0]] - 0.001), all_scores[indices]))
 
         return frr, far, thresholds
+
+    def compute_eer(self, scores: torch.Tensor, labels: torch.Tensor):
+        """
+        Returns equal error rate (EER) and the corresponding threshold.
+        
+        Args:
+            scores (torch.Tensor): prediction scores
+            labels (torch.Tensor): ground truth labels (0 = spoof, 1 = bonafide)
+            
+        Returns:
+            tuple: (eer, threshold)
+        """
+       
+        scores_np = scores.detach().cpu().numpy()
+        labels_np = labels.detach().cpu().numpy()
+        
+       
+        bonafide_scores = scores_np[labels_np == 1]  
+        other_scores = scores_np[labels_np == 0]
+        
+     
+        if len(bonafide_scores) == 0 or len(other_scores) == 0:
+            return 0.0, 0.0
+        
+       
+        frr, far, thresholds = self.compute_det_curve(bonafide_scores, other_scores)
+        abs_diffs = np.abs(frr - far)
+        min_index = np.argmin(abs_diffs)
+        eer = np.mean((frr[min_index], far[min_index]))
+        
+        return float(eer), float(thresholds[min_index])
+
+    def compute_eer_from_arrays(self, bonafide_scores, spoof_scores):
+        """
+        Compute EER from numpy arrays of bonafide and spoof scores.
+        
+        Args:
+            bonafide_scores: numpy array of bonafide scores
+            spoof_scores: numpy array of spoof scores
+            
+        Returns:
+            tuple: (eer, threshold)
+        """
+        if len(bonafide_scores) == 0 or len(spoof_scores) == 0:
+            return 0.0, 0.0
+        
+        frr, far, thresholds = self.compute_det_curve(bonafide_scores, spoof_scores)
+        abs_diffs = np.abs(frr - far)
+        min_index = np.argmin(abs_diffs)
+        eer = np.mean((frr[min_index], far[min_index]))
+        
+        return float(eer), float(thresholds[min_index])

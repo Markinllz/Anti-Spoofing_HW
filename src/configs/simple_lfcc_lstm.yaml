@@ -4,7 +4,7 @@
 defaults:
   - model: lcnn
   - transforms: lfcc
-  - loss_function: msep2sgrad
+  - loss_function: bce
   - optimizer: adam
   - lr_scheduler: step
   - trainer: default
