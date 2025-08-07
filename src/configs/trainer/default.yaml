@@ -1,7 +1,7 @@
 seed: 42
 device: auto
 n_epochs: 200  # Increased for better convergence
-save_period: 7
+save_period: 5  # Save model every 5 epochs
 eval_period: 2  # Changed: eval evaluation every 2 epochs from the beginning
 skip_oom: true
 max_grad_norm: 0.5
