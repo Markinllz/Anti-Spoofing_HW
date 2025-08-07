@@ -43,11 +43,13 @@ class EERMetric(BaseMetric):
         elif 'logits' in batch:
             logits = batch['logits']
             # For P2SGradLoss, logits are cosine angles in [-1, 1] range
-            # We use the bonafide cosine angle as the score
-            # Higher cosine angle = higher probability of being bonafide
-            scores = logits[:, 0]  # Use first column as bonafide score
-            # Convert from [-1, 1] to [0, 1] range for EER
-            scores = (scores + 1) / 2
+            # We need to compute the difference between bonafide and spoof scores
+            # Higher difference = higher probability of being bonafide
+            bonafide_scores = logits[:, 0]  # First column: bonafide cosine angle
+            spoof_scores = logits[:, 1]     # Second column: spoof cosine angle
+            scores = bonafide_scores - spoof_scores  # Difference as final score
+            # Convert from [-2, 2] to [0, 1] range for EER
+            scores = (scores + 2) / 4
         else:
             return 0.0
         

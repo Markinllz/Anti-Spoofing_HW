@@ -151,7 +151,7 @@ class AudioSpoofingDataset(BaseDataset):
                 )
                 
                 # Count statistics
-                if label == 0:
+                if label == 1:
                     bonafide_count += 1
                 else:
                     spoof_count += 1
