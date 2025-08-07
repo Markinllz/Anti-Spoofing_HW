@@ -3,7 +3,7 @@
 
 defaults:
   - model: lcnn
-  - transforms: lfcc
+  - transforms: melspec
   - loss_function: msep2sgrad
   - optimizer: adam
   - lr_scheduler: step
@@ -48,20 +48,19 @@ lr_scheduler:
 # Data path configuration
 data_path: ${oc.env:DATA_PATH,data}
 
-# Transforms configuration (LFCC - best performing front-end according to paper)
+# Transforms configuration (Mel-spectrogram)
 transforms:
   instance_transforms:
     data_object:
-      _target_: src.transforms.stft.LFCC
-      fl: 320
-      fs: 160
-      fn: 512
-      sr: 16000
-      filter_num: 20
-      with_energy: True
+      _target_: src.transforms.stft.MelSpectrogram
+      sample_rate: 16000
+      n_fft: 512
+      hop_length: 160
+      win_length: 320
+      n_mels: 80
+      f_min: 0.0
+      f_max: 8000.0
+      power: 2.0
       with_emphasis: True
-      with_delta: True
-      flag_for_LFB: False
-      num_coef: 20
-      min_freq: 0
-      max_freq: 1 
+      with_delta: False
+      in_db: True 
