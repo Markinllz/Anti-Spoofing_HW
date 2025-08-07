@@ -33,7 +33,7 @@ class AsoftMax(nn.Module):
         logits = batch['logits']
         labels = batch['labels']
         
-        # Для бинарной классификации используем CrossEntropy
-        # A-Softmax сложен для бинарного случая, поэтому используем стандартный подход
-        # как в статье для anti-spoofing
+        # For binary classification use CrossEntropy
+        # A-Softmax is complex for binary case, so use standard approach
+        # as in the paper for anti-spoofing
         return {"loss": F.cross_entropy(logits, labels)}

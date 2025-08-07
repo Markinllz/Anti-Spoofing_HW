@@ -46,7 +46,7 @@ class BaseDataset(Dataset):
         """
         item = self.index[idx]
         
-        # Применяем instance transforms
+        # Apply instance transforms
         if self.instance_transforms is not None:
             item = self._apply_instance_transforms(item)
         

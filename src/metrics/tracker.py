@@ -1,4 +1,4 @@
-# Исправленная версия tracker.py
+# Fixed version of tracker.py
 import pandas as pd
 import numpy as np
 from collections import defaultdict

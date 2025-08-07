@@ -36,16 +36,16 @@ class AudioSpoofingDataset(BaseDataset):
             index = read_json(out_path)
             print(f"Загружено {len(index)} записей из кэша")
             
-            # Автоматически заменяем пути для Kaggle
+            # Automatically replace paths for Kaggle
             kaggle_data_path = os.environ.get("DATA_PATH")
             if kaggle_data_path and kaggle_data_path != "data":
-                print(f"Заменяем пути для Kaggle: {kaggle_data_path}")
+                print(f"Replacing paths for Kaggle: {kaggle_data_path}")
                 for item in index:
-                    # Заменяем старые пути на новые для Kaggle
+                    # Replace old paths with new ones for Kaggle
                     if item["path"].startswith("data/ASVspoof2019_LA_"):
-                        # Извлекаем имя файла из старого пути
+                        # Extract filename from old path
                         file_name = item["path"].split("/")[-1]
-                        # Определяем тип данных (train/dev/eval)
+                        # Determine data type (train/dev/eval)
                         if "train" in item["path"]:
                             item["path"] = f"{kaggle_data_path}/ASVspoof2019_LA_train/flac/{file_name}"
                         elif "dev" in item["path"]:
@@ -56,7 +56,7 @@ class AudioSpoofingDataset(BaseDataset):
             print(f"Создаем новый index.json: {out_path}")
             index = self._create_index(label_path, audio_path, out_path)
 
-        # Ограничиваем размер датасета для отладки
+        # Limit dataset size for debugging
         if self.max_samples is not None:
             index = index[:self.max_samples]
 
@@ -104,9 +104,9 @@ class AudioSpoofingDataset(BaseDataset):
             return item_data
             
         except Exception as e:
-            # Return zero tensor as fallback - увеличиваем до 4 секунд
+            # Return zero tensor as fallback - increase to 4 seconds
             fallback_waveform = torch.zeros(1, 64000)  # 4 seconds of silence at 16kHz
-            print(f"Ошибка загрузки аудио {audio_path}: {e}")
+            print(f"Error loading audio {audio_path}: {e}")
             return {
                 "data_object": fallback_waveform,
                 "labels": label
@@ -124,7 +124,7 @@ class AudioSpoofingDataset(BaseDataset):
         """
         index = []
         
-        # Подсчитываем общее количество строк в файле
+        # Count total lines in file
         with open(label_path, "r") as f:
             total_lines = sum(1 for _ in f)
         
@@ -132,14 +132,14 @@ class AudioSpoofingDataset(BaseDataset):
         spoof_count = 0
 
         with open(label_path, "r") as f:
-            for line_num, line in enumerate(tqdm(f, total=total_lines, desc="Обработка строк")):
+            for line_num, line in enumerate(tqdm(f, total=total_lines, desc="Processing lines")):
                 parts = line.strip().split()
                 file_id = parts[1]
                 class_name = parts[-1]
                 label = 1 if class_name == "bonafide" else 0  # bonafide = 1, spoof = 0
                 path = str(Path(audio_path) / f"{file_id}.flac")
                 
-                # Проверяем существование файла
+                # Check if file exists
                 if not Path(path).exists():
                     continue
                 
@@ -150,7 +150,7 @@ class AudioSpoofingDataset(BaseDataset):
                     }
                 )
                 
-                # Подсчитываем статистику
+                # Count statistics
                 if label == 0:
                     bonafide_count += 1
                 else:
@@ -158,12 +158,12 @@ class AudioSpoofingDataset(BaseDataset):
         
         write_json(index, out_path)
         
-        # Выводим статистику датасета
+        # Print dataset statistics
         total_samples = len(index)
-        print(f"\nСтатистика датасета '{self.name}':")
-        print(f"   Всего файлов: {total_samples}")
-        print(f"   Bonafide (класс 0): {bonafide_count} ({100*bonafide_count/total_samples:.1f}%)")
-        print(f"   Spoof (класс 1): {spoof_count} ({100*spoof_count/total_samples:.1f}%)")
-        print(f"   Соотношение spoof/bonafide: {spoof_count/bonafide_count:.2f}")
+        print(f"\nDataset statistics '{self.name}':")
+        print(f"   Total files: {total_samples}")
+        print(f"   Bonafide (class 0): {bonafide_count} ({100*bonafide_count/total_samples:.1f}%)")
+        print(f"   Spoof (class 1): {spoof_count} ({100*spoof_count/total_samples:.1f}%)")
+        print(f"   Spoof/bonafide ratio: {spoof_count/bonafide_count:.2f}")
 
         return index

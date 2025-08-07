@@ -20,10 +20,10 @@ class AddNoise:
         if random.random() < self.p:
             noise_level = random.uniform(*self.noise_level_range)
             
-            # Генерируем белый шум
+            # Generate white noise
             noise = torch.randn_like(waveform) * noise_level
             
-            # Нормализуем амплитуду
+            # Normalize amplitude
             signal_power = torch.mean(waveform ** 2)
             noise_power = torch.mean(noise ** 2)
             
@@ -50,7 +50,7 @@ class TimeStretch:
         if random.random() < self.p:
             stretch_factor = random.uniform(*self.stretch_factor_range)
             
-            # Изменяем длину через resample
+            # Change length through resample
             original_length = waveform.shape[-1]
             new_length = int(original_length / stretch_factor)
             
@@ -61,7 +61,7 @@ class TimeStretch:
                 align_corners=False
             ).squeeze(0)
             
-            # Обрезаем или дополняем до исходной длины
+            # Crop or pad to original length
             if resampled.shape[-1] > original_length:
                 return resampled[:, :original_length]
             else:
@@ -92,7 +92,7 @@ class TimeMasking:
                 max_start = waveform.shape[-1] - mask_size
                 start_pos = random.randint(0, max_start)
                 
-                # Применяем маску (заменяем на нули)
+                # Apply mask (replace with zeros)
                 waveform = waveform.clone()
                 waveform[:, start_pos:start_pos + mask_size] = 0
         
@@ -111,9 +111,9 @@ class ComposeAugmentations:
         return waveform
 
 
-# Предустановленные комбинации
+# Preset combinations
 def get_anti_spoofing_augmentations(p: float = 0.2) -> ComposeAugmentations:
-    """2 основные аугментации для anti-spoofing: шум и маскинг"""
+    """2 main augmentations for anti-spoofing: noise and masking"""
     return ComposeAugmentations([
         AddNoise(noise_level_range=(0.001, 0.01), p=p),
         TimeMasking(mask_ratio_range=(0.1, 0.3), p=p),

@@ -15,12 +15,12 @@ defaults:
 
 # Training configuration
 trainer:
-  epochs: 30
+  epochs: 100  # Increased number of epochs
   eval_period: 2
   save_period: 10
   log_step: 100
   monitor: min eval_eer
-  early_stop: 10
+  early_stop: 20  # Increased early stopping
   seed: 42
 
 # Data configuration
@@ -36,7 +36,7 @@ model:
 
 # Optimizer configuration
 optimizer:
-  lr: 1e-3
+  lr: 1e-4  # Reduced learning rate
   weight_decay: 1e-4
 
 # Learning rate scheduler

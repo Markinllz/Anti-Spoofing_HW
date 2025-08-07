@@ -72,7 +72,10 @@ class SubmissionInferencer(Inferencer):
                 outputs = self.model(batch["data_object"])
                 
                 logits = outputs["logits"]
-                scores = torch.sigmoid(logits.squeeze(-1))
+                # Convert logits to scores where higher = more likely bonafide
+                # Our model: logits > 0 = bonafide, logits < 0 = spoof
+                # For EER: we want higher scores for bonafide, lower for spoof
+                scores = logits.squeeze(-1)  # Keep logits as they are
                 
                 batch_size = logits.shape[0]
                 
@@ -116,7 +119,7 @@ def main(config):
     ).to(device)
     print(f"   Model: {type(model).__name__}")
 
-    best_model_path = "bestmodel/checkpoint-epoch6.pth"
+    best_model_path = "bestmodel/checkpoint-epoch20.pth"
     print(f"Loading model from: {best_model_path}")
     
     if os.path.exists(best_model_path):
