@@ -77,8 +77,8 @@ def main(config):
         loss_function = loss_function.to(device)
     else:
         # Try to create loss function manually
-        from src.loss.msep2sgrad import MSEP2SGRADLoss
-        loss_function = MSEP2SGRADLoss().to(device)
+        from src.loss.sigmoid_loss import SigmoidLoss
+        loss_function = SigmoidLoss().to(device)
     
     metrics = instantiate(config.metrics)
 

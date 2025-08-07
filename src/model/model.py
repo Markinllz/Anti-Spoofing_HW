@@ -138,9 +138,8 @@ class LCNN(nn.Module):
         # BatchNorm_31: 80 features
         self.bn_fc = nn.BatchNorm1d(80, affine=False)
         
-        # FC_32: 2 features, as in original
-        # Use P2SActivationLayer instead of Linear for cosine angle output
-        self.fc2 = P2SActivationLayer(80, num_classes)
+        # FC_32: 1 feature for binary classification with sigmoid
+        self.fc2 = nn.Linear(80, 1)
         
         # Dropout
         self.dropout = nn.Dropout(dropout_rate)
@@ -196,12 +195,11 @@ class LCNN(nn.Module):
         # BatchNorm_31: 80 features
         features = self.bn_fc(features)
         
-        # FC_32: 2 features (cosine angles)
+        # FC_32: 1 feature for binary classification
         features = self.dropout(features)
-        logits = self.fc2(features)  # (batch_size, num_classes) - cosine angles
+        logits = self.fc2(features)  # (batch_size, 1) - logits before sigmoid
         
-        # For P2SGradLoss, we return cosine angles directly
-        # No sigmoid needed as we're using cosine angles
-        probs = logits  # cosine angles are already in [-1, 1] range
+        # Apply sigmoid for probabilities
+        probs = torch.sigmoid(logits)
         
         return {"logits": logits, "probs": probs}

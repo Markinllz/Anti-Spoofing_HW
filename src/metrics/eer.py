@@ -42,14 +42,9 @@ class EERMetric(BaseMetric):
             scores = batch['scores']
         elif 'logits' in batch:
             logits = batch['logits']
-            # For P2SGradLoss, logits are cosine angles in [-1, 1] range
-            # We need to compute the difference between bonafide and spoof scores
-            # Higher difference = higher probability of being bonafide
-            bonafide_scores = logits[:, 0]  # First column: bonafide cosine angle
-            spoof_scores = logits[:, 1]     # Second column: spoof cosine angle
-            scores = bonafide_scores - spoof_scores  # Difference as final score
-            # Convert from [-2, 2] to [0, 1] range for EER
-            scores = (scores + 2) / 4
+            # For sigmoid loss, logits are before sigmoid
+            # Apply sigmoid to get probabilities
+            scores = torch.sigmoid(logits.squeeze(-1))
         else:
             return 0.0
         

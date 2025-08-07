@@ -4,7 +4,7 @@
 defaults:
   - model: lcnn
   - transforms: melspec
-  - loss_function: msep2sgrad
+  - loss_function: sigmoid
   - optimizer: adam
   - lr_scheduler: step
   - trainer: default
