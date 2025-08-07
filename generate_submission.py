@@ -78,10 +78,10 @@ class SubmissionInferencer(Inferencer):
                 
                 logits = outputs["logits"]
                 # Convert logits to scores where higher = more likely bonafide
-                # For BCEWithLogitsLoss: apply sigmoid to get probabilities
+                # For A-Softmax: apply sigmoid for binary classification with 1 output
                 # Our model: sigmoid(logits) > 0.5 = bonafide, sigmoid(logits) < 0.5 = spoof
                 # For EER: we want higher scores for bonafide, lower for spoof
-                scores = torch.sigmoid(logits.squeeze(-1))  # Apply sigmoid for BCEWithLogitsLoss
+                scores = torch.sigmoid(logits.squeeze(-1))  # Probability of bonafide class
                 
                 batch_size = logits.shape[0]
                 

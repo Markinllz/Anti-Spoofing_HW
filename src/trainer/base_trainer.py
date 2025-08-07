@@ -321,11 +321,14 @@ class BaseTrainer:
         """
         self.is_train = False
         self.model.eval()
-        self.evaluation_metrics.reset()
         
         # Determine correct display name
         part_display = "testing"
         print(f"\n{part_display.capitalize()} on {part}...")
+        
+        all_predictions = []
+        all_labels = []
+        all_losses = []
         
         with torch.no_grad():
             total_batches = len(dataloader)
@@ -333,43 +336,35 @@ class BaseTrainer:
                 # Simple progress without excessive output
                 progress = int(((batch_idx + 1) / total_batches) * 100)
                 print(f"\r  {part_display.capitalize()}: {progress}% ({batch_idx + 1}/{total_batches})", end="")
+                
                 batch = self.process_batch(
                     batch,
-                    metrics=self.evaluation_metrics,
+                    metrics=None,  # Don't use metrics tracker
                 )
+                
+                # Store for explicit calculation
+                all_predictions.append(batch["predictions"])
+                all_labels.append(batch["labels"])
+                all_losses.append(batch["loss"].item())
             
             # Final validation progress
             print(f"\r  {part_display.capitalize()}: 100% ({total_batches}/{total_batches})")
             
+            # Calculate metrics explicitly
+            metrics = self._calculate_explicit_metrics(all_predictions, all_labels)
+            
             # Log evaluation metrics to CometML with correct step (always for eval)
             self.writer.set_step(epoch, part)  # Fixed: epoch instead of epoch * self.epoch_len
-            self._log_scalars(self.evaluation_metrics)
-            self._log_batch(
-                batch_idx, batch, part
-            )
+            self.writer.add_scalar(f"{part}/loss", metrics['loss'])
+            self.writer.add_scalar(f"{part}/eer", metrics['eer'])
 
-        eval_results = self.evaluation_metrics.result()
-        
         # Print evaluation results nicely
         part_prefix = "Eval"
         print(f"Results of {part_display} {part}:")
-        if "loss" in eval_results:
-            print(f"    {part_prefix} Loss: {eval_results['loss']:.6f}")
-        if "eer" in eval_results:
-            print(f"    {part_prefix} EER: {eval_results['eer']:.6f}")
-        for metric_name, metric_value in eval_results.items():
-            if metric_name not in ["loss", "eer"]:
-                print(f"    {part_prefix} {metric_name}: {metric_value:.6f}")
-        
-        # Also output final train metrics for comparison
-        train_results = self.train_metrics.result()
-        print(f"Final train metrics:")
-        if "loss" in train_results:
-            print(f"    Train Loss: {train_results['loss']:.6f}")
-        if "eer" in train_results:
-            print(f"    Train EER: {train_results['eer']:.6f}")
+        print(f"    {part_prefix} Loss: {metrics['loss']:.6f}")
+        print(f"    {part_prefix} EER: {metrics['eer']:.6f}")
 
-        return eval_results
+        return metrics
 
     def _monitor_performance(self, logs, not_improved_count):
         """
@@ -687,3 +682,61 @@ class BaseTrainer:
             self.model.load_state_dict(checkpoint["state_dict"])
         else:
             self.model.load_state_dict(checkpoint)
+
+    def _calculate_explicit_metrics(self, all_predictions, all_labels):
+        """
+        Calculate loss and EER explicitly without using trackers.
+        
+        Args:
+            all_predictions: list of batch predictions from epoch
+            all_labels: list of batch labels from epoch
+            
+        Returns:
+            dict: {'loss': float, 'eer': float}
+        """
+        # Flatten predictions and labels from all batches
+        all_scores = []
+        all_labels_np = []
+        total_loss = 0.0
+        total_samples = 0
+        
+        for batch_pred, batch_labels in zip(all_predictions, all_labels):
+            # Calculate loss for this batch
+            if isinstance(batch_pred, dict):
+                logits = batch_pred['logits']
+            else:
+                logits = batch_pred
+            
+            # Calculate loss for this batch
+            batch_loss = self.criterion(logits, batch_labels)
+            total_loss += batch_loss.item() * batch_labels.size(0)  # Weight by batch size
+            total_samples += batch_labels.size(0)
+            
+            # Apply sigmoid for binary classification with 1 output
+            scores = torch.sigmoid(logits.squeeze(-1))  # Probability of bonafide class
+            all_scores.extend(scores.detach().cpu().numpy())
+            all_labels_np.extend(batch_labels.detach().cpu().numpy())
+        
+        if len(all_scores) == 0:
+            return {'loss': 0.0, 'eer': 0.0}
+        
+        # Calculate average loss
+        avg_loss = total_loss / total_samples if total_samples > 0 else 0.0
+        
+        # Convert to numpy arrays
+        scores_np = np.array(all_scores)
+        labels_np = np.array(all_labels_np)
+        
+        # Separate bonafide and spoof scores
+        bonafide_scores = scores_np[labels_np == 1]
+        spoof_scores = scores_np[labels_np == 0]
+        
+        if len(bonafide_scores) == 0 or len(spoof_scores) == 0:
+            return {'loss': avg_loss, 'eer': 0.0}
+        
+        # Calculate EER using explicit function
+        from src.metrics.eer import EERMetric
+        eer_metric = EERMetric()
+        eer, _ = eer_metric.compute_eer_from_arrays(bonafide_scores, spoof_scores)
+        
+        return {'loss': avg_loss, 'eer': float(eer)}

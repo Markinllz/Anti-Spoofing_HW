@@ -20,20 +20,27 @@ class AsoftMax(nn.Module):
         self.margin = margin
         self.scale = scale
 
-    def forward(self, batch, **kwargs):
+    def forward(self, predictions, targets):
         """
         A-Softmax loss compute
         
         Args:
-            batch (dict): batch containing 'logits' and 'labels'
-            **kwargs: дополнительные аргументы
+            predictions: model predictions (dict with 'logits' or tensor)
+            targets: ground truth labels
         Returns:
-            losses (dict): dictionary with loss
+            loss: computed A-Softmax loss value
         """
-        logits = batch['logits']
-        labels = batch['labels']
-        
-        # For binary classification use CrossEntropy
+        if isinstance(predictions, dict):
+            logits = predictions['logits']
+        else:
+            logits = predictions
+            
+        # For binary classification with 1 output, use BCEWithLogitsLoss
         # A-Softmax is complex for binary case, so use standard approach
-        # as in the paper for anti-spoofing
-        return {"loss": F.cross_entropy(logits, labels)}
+        # as mentioned in the paper for anti-spoofing
+        targets = targets.float()  # BCE expects float targets
+        
+        # Apply scale to logits and use BCEWithLogitsLoss
+        scaled_logits = self.scale * logits.squeeze(-1)
+        
+        return F.binary_cross_entropy_with_logits(scaled_logits, targets)

@@ -46,6 +46,10 @@ class Trainer(BaseTrainer):
         loss = self.criterion(batch["logits"], batch["labels"])
         batch["loss"] = loss
 
+        # Store predictions for explicit metric calculation
+        batch["predictions"] = outputs
+        batch["labels"] = batch["labels"]
+
         if self.is_train:
             batch["loss"].backward()
             self._clip_grad_norm()

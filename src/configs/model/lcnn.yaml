@@ -1,8 +1,8 @@
 # LCNN configuration
-# For SigmoidLoss with binary classification (1 output)
+# For A-Softmax with binary classification (1 output)
 
 model:
   _target_: src.model.model.LCNN
   in_channels: 1
   num_classes: 1  # One output for binary classification
-  dropout_rate: 0.5 
+  dropout_rate: 0.75  # According to ASVspoof2019 STC paper 

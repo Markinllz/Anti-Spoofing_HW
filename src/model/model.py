@@ -60,7 +60,7 @@ class LCNN(nn.Module):
     Architecture exactly as shown in the paper with 371K parameters
     """
     
-    def __init__(self, in_channels=1, num_classes=2, dropout_rate=0.5):
+    def __init__(self, in_channels=1, num_classes=2, dropout_rate=0.75):
         super(LCNN, self).__init__()
         
         # CNN features - exactly as in the paper
@@ -197,8 +197,8 @@ class LCNN(nn.Module):
         
         # FC_32: 1 feature for binary classification
         features = self.dropout(features)
-        logits = self.fc2(features)  # (batch_size, 1) - logits before sigmoid
+        logits = self.fc2(features)  # (batch_size, 1) - logits for A-softmax
         
-        # For BCEWithLogitsLoss, we return logits without sigmoid
-        # The loss function will apply sigmoid internally
+        # For A-Softmax loss, return logits without sigmoid
+        # The loss function will handle the scaling and activation
         return {"logits": logits}
