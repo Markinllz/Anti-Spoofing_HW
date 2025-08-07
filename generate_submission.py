@@ -111,15 +111,15 @@ def main(config):
     print(f"   Available dataloaders: {list(dataloaders.keys())}")
 
     print("Creating model...")
-    from src.model.model import LCNNWithLSTM
-    model = LCNNWithLSTM(
+    from src.model.model import LCNN
+    model = LCNN(
         in_channels=1,
         num_classes=1,
         dropout_rate=0.5
     ).to(device)
     print(f"   Model: {type(model).__name__}")
 
-    best_model_path = "bestmodel/checkpoint-epoch20.pth"
+    best_model_path = "bestmodel/checkpoint-epoch5.pth"
     print(f"Loading model from: {best_model_path}")
     
     if os.path.exists(best_model_path):
