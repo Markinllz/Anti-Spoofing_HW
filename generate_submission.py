@@ -35,7 +35,12 @@ class SubmissionInferencer(Inferencer):
         predictions = {}
         
         # Load eval protocol to get correct trial IDs
-        protocol_path = "/kaggle/input/asvspoof2019-la/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt"
+        # Use environment variable for data path
+        data_path = os.environ.get('DATA_PATH', 'data')
+        # For Kaggle: /kaggle/input/asvpoof-2019-dataset/LA/
+        if data_path == '/kaggle/input/asvspoof2019-la':
+            data_path = '/kaggle/input/asvpoof-2019-dataset/LA'
+        protocol_path = f"{data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt"
         eval_trial_ids = []
         with open(protocol_path, "r") as f:
             for line in f:

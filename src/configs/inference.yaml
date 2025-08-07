@@ -20,7 +20,7 @@ inferencer:
   device_tensors: ["data_object", "labels"]
 
 
-data_path: /kaggle/input/asvspoof2019-la
+data_path: /kaggle/input/asvpoof-2019-dataset/LA
 
 # Transforms configuration (Mel-spectrogram)
 transforms:
