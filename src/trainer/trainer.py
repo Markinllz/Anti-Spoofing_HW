@@ -58,8 +58,13 @@ class Trainer(BaseTrainer):
             # LR scheduler step moved to end of epoch in base_trainer.py
 
         # Store predictions for explicit calculation
-        batch["predictions"] = outputs
-        batch["labels"] = batch["labels"]
+        # Store logits directly for EER calculation
+        if "logits" in batch:
+            batch["predictions"] = batch["logits"]
+        else:
+            print(f"  WARNING: No logits in batch! Available keys: {list(batch.keys())}")
+            batch["predictions"] = torch.zeros(batch["labels"].shape[0], 1)  # Fallback
+        # Labels are already in batch
 
         # Only update metrics if metrics is not None
         if metrics is not None:

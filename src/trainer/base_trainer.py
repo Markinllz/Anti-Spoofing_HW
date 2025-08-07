@@ -716,11 +716,16 @@ class BaseTrainer:
         total_loss = 0.0
         total_samples = 0
         
-        for batch_pred, batch_labels in zip(all_predictions, all_labels):
+        for i, (batch_pred, batch_labels) in enumerate(zip(all_predictions, all_labels)):
             # Calculate loss for this batch
             if isinstance(batch_pred, dict):
-                logits = batch_pred['logits']
+                if 'logits' in batch_pred:
+                    logits = batch_pred['logits']
+                else:
+                    print(f"    WARNING: No logits in batch_pred dict! Keys: {list(batch_pred.keys())}")
+                    continue  # Skip this batch
             else:
+                # batch_pred is already logits tensor
                 logits = batch_pred
             
             # Calculate loss for this batch
@@ -729,11 +734,15 @@ class BaseTrainer:
             total_samples += batch_labels.size(0)
             
             # Apply sigmoid for binary classification with 1 output
-            scores = torch.sigmoid(logits.squeeze(-1))  # Probability of bonafide class
+            # Ensure logits are 1D for binary classification
+            if logits.dim() > 1:
+                logits = logits.squeeze(-1)
+            scores = torch.sigmoid(logits)  # Probability of bonafide class
             all_scores.extend(scores.detach().cpu().numpy())
             all_labels_np.extend(batch_labels.detach().cpu().numpy())
         
         if len(all_scores) == 0:
+            print(f"  ERROR: No scores collected! This means predictions are empty.")
             return {'loss': 0.0, 'eer': 0.0}
         
         # Calculate average loss
