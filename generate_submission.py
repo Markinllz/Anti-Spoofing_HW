@@ -78,9 +78,10 @@ class SubmissionInferencer(Inferencer):
                 
                 logits = outputs["logits"]
                 # Convert logits to scores where higher = more likely bonafide
-                # Our model: logits > 0 = bonafide, logits < 0 = spoof
+                # For BCEWithLogitsLoss: apply sigmoid to get probabilities
+                # Our model: sigmoid(logits) > 0.5 = bonafide, sigmoid(logits) < 0.5 = spoof
                 # For EER: we want higher scores for bonafide, lower for spoof
-                scores = logits.squeeze(-1)  # Keep logits as they are
+                scores = torch.sigmoid(logits.squeeze(-1))  # Apply sigmoid for BCEWithLogitsLoss
                 
                 batch_size = logits.shape[0]
                 
