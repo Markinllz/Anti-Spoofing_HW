@@ -48,4 +48,10 @@ dataloader:
     batch_size: 32
     num_workers: 4
     pin_memory: true
-    shuffle: false 
+    shuffle: false
+  dev:
+    _target_: torch.utils.data.DataLoader
+    batch_size: 32
+    num_workers: 4
+    pin_memory: true
+    shuffle: false

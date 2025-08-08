@@ -72,7 +72,7 @@ class Inferencer(BaseTrainer):
         self.writer = writer
         if self.metrics is not None:
             self.evaluation_metrics = MetricTracker(
-                *[m.name for m in self.metrics["inference"]],
+                *[m.name for m in self.metrics.get("inference", [])],
                 writer=writer,
             )
         else:
@@ -121,7 +121,9 @@ class Inferencer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        outputs = self.model(batch)
+        # Pass data tensor into the model
+        data_tensor = batch["data_object"] if isinstance(batch, dict) and "data_object" in batch else batch
+        outputs = self.model(data_tensor)
         batch.update(outputs)
 
         if metrics is not None:
@@ -166,7 +168,8 @@ class Inferencer(BaseTrainer):
         self.is_train = False
         self.model.eval()
 
-        self.evaluation_metrics.reset()
+        if self.evaluation_metrics is not None:
+            self.evaluation_metrics.reset()
 
         # create Save dir
         if self.save_path is not None:
@@ -189,7 +192,7 @@ class Inferencer(BaseTrainer):
                     metrics=self.evaluation_metrics,
                 )
 
-        results = self.evaluation_metrics.result()
+        results = self.evaluation_metrics.result() if self.evaluation_metrics is not None else {}
         
         # Log metrics to writer if available
         if self.writer is not None:

@@ -89,7 +89,8 @@ class AudioSpoofingDataset(BaseDataset):
             # Create item with correct keys
             item_data = {
                 "data_object": waveform,
-                "labels": label
+                "labels": label,
+                "key": Path(audio_path).stem,
             }
             
             # Apply augmentations first (if available and only for training)

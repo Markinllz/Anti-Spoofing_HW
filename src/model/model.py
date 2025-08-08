@@ -138,8 +138,13 @@ class LCNN(nn.Module):
         # BatchNorm_31: 80 features
         self.bn_fc = nn.BatchNorm1d(80, affine=False)
         
-        # FC_32: 2 features for binary classification (spoof, bonafide)
-        self.fc2 = nn.Linear(80, 2)
+        # FC_32: binary classification head
+        # Respect requested num_classes for flexibility (default 2: spoof, bonafide)
+        output_dim = 2 if num_classes is None else int(num_classes)
+        if output_dim < 2:
+            # Force 2 outputs to remain compatible with softmax-based metrics
+            output_dim = 2
+        self.fc2 = nn.Linear(80, output_dim)
         
         # Dropout
         self.dropout = nn.Dropout(dropout_rate)
@@ -195,9 +200,9 @@ class LCNN(nn.Module):
         # BatchNorm_31: 80 features
         features = self.bn_fc(features)
         
-        # FC_32: 1 feature for binary classification
+        # FC head
         features = self.dropout(features)
-        logits = self.fc2(features)  # (batch_size, 1) - logits for A-softmax
+        logits = self.fc2(features)
         
         # For A-Softmax loss, return logits without sigmoid
         # The loss function will handle the scaling and activation

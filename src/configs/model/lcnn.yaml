@@ -1,8 +1,8 @@
 # LCNN configuration
-# For A-Softmax with binary classification (1 output)
+# Binary classification with 2 outputs (spoof, bonafide)
 
 model:
   _target_: src.model.model.LCNN
   in_channels: 1
-  num_classes: 1  # One output for binary classification
-  dropout_rate: 0.75  # According to ASVspoof2019 STC paper 
+  num_classes: 2  # Two outputs: [spoof, bonafide]
+  dropout_rate: 0.75  # According to ASVspoof2019 STC paper

@@ -64,6 +64,9 @@ def collate_fn(dataset_items: list[dict]):
     
     result_batch["data_object"] = torch.stack(padded_data)
     result_batch["labels"] = torch.tensor([elem["labels"] for elem in dataset_items], dtype=torch.long)
+    # Preserve sample keys for deterministic submission mapping
+    if "key" in dataset_items[0]:
+        result_batch["keys"] = [elem["key"] for elem in dataset_items]
 
     return result_batch
 

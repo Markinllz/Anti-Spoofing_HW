@@ -63,9 +63,10 @@ class Trainer(BaseTrainer):
         # Labels are already in batch
 
         # Only update metrics if metrics is not None
-        if metrics is not None:
+        if metrics is not None and hasattr(self.config, 'writer') and hasattr(self.config.writer, 'loss_names'):
             for loss_name in self.config.writer.loss_names:
-                metrics.update(loss_name, batch[loss_name].item())
+                if loss_name in batch:
+                    metrics.update(loss_name, batch[loss_name].item())
 
             for met in metric_funcs:
                 metrics.update(met.name, met(batch))

@@ -82,8 +82,9 @@ class BaseTrainer:
             self.train_dataloader = inf_loop(self.train_dataloader)
             self.epoch_len = epoch_len
 
+        # Evaluate on all non-train partitions (e.g., 'dev', 'eval')
         self.evaluation_dataloaders = {
-            k: v for k, v in dataloaders.items() if k in ["eval"]
+            k: v for k, v in dataloaders.items() if k != "train"
         }
 
         # define epochs

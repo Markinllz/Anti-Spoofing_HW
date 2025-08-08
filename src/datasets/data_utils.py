@@ -81,14 +81,14 @@ def get_dataloaders(config, device, debug_mode=False):
     
     for dataset_partition in config.datasets.keys():
         dataset = datasets[dataset_partition]
-        
+
         # For debugging all partitions use same data from train
         if debug_mode:
             # Create subset only once from first dataset (usually train)
             first_dataset = list(dataloaders.values())[0].dataset
             debug_subset = torch.utils.data.Subset(first_dataset, range(min(100, len(first_dataset))))
-        
-        # For debugging change dataloader parameters
+
+        # Resolve dataloader parameters (support per-partition overrides)
         if debug_mode:
             batch_size = min(2, len(dataset))
             shuffle = False  # In debug mode don't shuffle for reproducibility
@@ -96,11 +96,27 @@ def get_dataloaders(config, device, debug_mode=False):
             pin_memory = False  # No pin memory for debugging
             drop_last = False  # In debug mode don't drop data
         else:
-            batch_size = config.dataloader.batch_size
-            shuffle = True  # In normal mode definitely shuffle
-            num_workers = config.dataloader.num_workers
-            pin_memory = config.dataloader.pin_memory
-            drop_last = config.dataloader.drop_last
+            # Defaults from global dataloader config
+            batch_size = int(config.dataloader.batch_size)
+            num_workers = int(config.dataloader.num_workers)
+            pin_memory = bool(config.dataloader.pin_memory)
+            drop_last = bool(config.dataloader.drop_last)
+            # By default shuffle only train partition
+            shuffle = dataset_partition == "train"
+
+            # Per-partition overrides if provided (e.g., inference.yaml has dataloader.eval)
+            if hasattr(config, "dataloader") and hasattr(config.dataloader, dataset_partition):
+                part_cfg = getattr(config.dataloader, dataset_partition)
+                if hasattr(part_cfg, "batch_size"):
+                    batch_size = int(part_cfg.batch_size)
+                if hasattr(part_cfg, "num_workers"):
+                    num_workers = int(part_cfg.num_workers)
+                if hasattr(part_cfg, "pin_memory"):
+                    pin_memory = bool(part_cfg.pin_memory)
+                if hasattr(part_cfg, "drop_last"):
+                    drop_last = bool(part_cfg.drop_last)
+                if hasattr(part_cfg, "shuffle"):
+                    shuffle = bool(part_cfg.shuffle)
 
         assert batch_size <= len(dataset), (
             f"The batch size ({batch_size}) cannot "
@@ -118,9 +134,9 @@ def get_dataloaders(config, device, debug_mode=False):
             worker_init_fn=set_worker_seed,
             collate_fn=collate_fn,
         )
-        
+
         dataloaders[dataset_partition] = partition_dataloader
-        
+
         if debug_mode:
             print(f"{dataset_partition}: {len(dataset)} samples, batch_size={batch_size}")
 
