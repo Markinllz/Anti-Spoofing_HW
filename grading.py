@@ -39,17 +39,50 @@ for filename in os.listdir(SOLUTIONS_DIR):
                 if len(row) != 2:
                     continue  # skip malformed lines
                 key, score = row
-                student_scores[key] = float(score)
+                try:
+                    student_scores[key] = float(score)
+                except ValueError:
+                    print(f"WARNING: Invalid score '{score}' for key '{key}' in {filename}")
+                    continue
 
         # Build student index
         student_index = deepcopy(index)
+        missing_keys = []
         for entry in student_index:
             key = entry["key"]
-            entry["score"] = student_scores[key]  # error if missing
+            if key not in student_scores:
+                missing_keys.append(key)
+            else:
+                entry["score"] = student_scores[key]
+        
+        if missing_keys:
+            print(f"WARNING: Missing {len(missing_keys)} keys in {filename}: {missing_keys[:5]}...")
+            # Remove entries with missing scores
+            student_index = [entry for entry in student_index if entry["key"] in student_scores]
 
         # Extract scores and labels
         scores = np.array([entry["score"] for entry in student_index])
         labels = np.array([entry["label"] for entry in student_index])
+
+        if len(scores) != len(index):
+            print(f"WARNING: {filename} has {len(scores)} scores, expected {len(index)}")
+            if len(scores) == 0:
+                print(f"ERROR: No valid scores in {filename}")
+                continue
+
+        # Additional check: verify score distribution
+        if len(scores) > 0:
+            print(f"Score statistics for {filename}:")
+            print(f"   Min: {np.min(scores):.4f}")
+            print(f"   Max: {np.max(scores):.4f}")
+            print(f"   Mean: {np.mean(scores):.4f}")
+            print(f"   Std: {np.std(scores):.4f}")
+            
+            # Check for reasonable score range (should be 0-1 for bonafide probabilities)
+            if np.min(scores) < 0 or np.max(scores) > 1:
+                print(f"WARNING: Scores outside [0,1] range! This might indicate wrong format.")
+            if np.std(scores) < 0.01:
+                print(f"WARNING: Very low score variance! Model might not be trained properly.")
 
         assert len(scores) == len(index), "Not enough / too many scores"
 

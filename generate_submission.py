@@ -86,11 +86,21 @@ class SubmissionInferencer(Inferencer):
                 batch_size = logits.shape[0]
                 
                 # Use trial IDs from protocol
+                if trial_id_idx + batch_size > len(eval_trial_ids):
+                    print(f"WARNING: Not enough trial IDs! Expected {len(eval_trial_ids)}, got {trial_id_idx + batch_size}")
+                    break
+                    
                 keys = eval_trial_ids[trial_id_idx:trial_id_idx + batch_size]
                 trial_id_idx += batch_size
                 
                 for i, (key, prob) in enumerate(zip(keys, bonafide_probs)):
                     predictions[key] = prob.item()
+        
+        print(f"Generated {len(predictions)} predictions from {len(eval_trial_ids)} expected trial IDs")
+        
+        if len(predictions) != len(eval_trial_ids):
+            print(f"WARNING: Mismatch! Generated {len(predictions)} predictions, expected {len(eval_trial_ids)}")
+            print(f"This could cause incorrect EER calculation in grading.py!")
         
         return predictions
 

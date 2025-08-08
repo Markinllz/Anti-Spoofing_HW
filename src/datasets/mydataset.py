@@ -162,8 +162,8 @@ class AudioSpoofingDataset(BaseDataset):
         total_samples = len(index)
         print(f"\nDataset statistics '{self.name}':")
         print(f"   Total files: {total_samples}")
-        print(f"   Bonafide (class 0): {bonafide_count} ({100*bonafide_count/total_samples:.1f}%)")
-        print(f"   Spoof (class 1): {spoof_count} ({100*spoof_count/total_samples:.1f}%)")
+        print(f"   Bonafide (class 1): {bonafide_count} ({100*bonafide_count/total_samples:.1f}%)")
+        print(f"   Spoof (class 0): {spoof_count} ({100*spoof_count/total_samples:.1f}%)")
         print(f"   Spoof/bonafide ratio: {spoof_count/bonafide_count:.2f}")
 
         return index

@@ -343,6 +343,23 @@ class BaseTrainer:
         part_display = "testing"
         print(f"\n{part_display.capitalize()} on {part}...")
         
+        # For eval partition, load protocol to ensure correct order
+        if part == "eval":
+            # Load eval protocol to get correct trial IDs
+            import os
+            data_path = os.environ.get('DATA_PATH', 'data')
+            if data_path == '/kaggle/input/asvspoof2019-la':
+                data_path = '/kaggle/input/asvpoof-2019-dataset/LA'
+            protocol_path = f"{data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt"
+            eval_trial_ids = []
+            with open(protocol_path, "r") as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) >= 2:
+                        eval_trial_ids.append(parts[1])  # trial_id is the second column
+            
+            print(f"   Protocol trial IDs: {len(eval_trial_ids)}")
+        
         all_predictions = []
         all_labels = []
         all_losses = []
