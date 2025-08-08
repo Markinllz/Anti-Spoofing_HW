@@ -125,7 +125,7 @@ def main(config):
     ).to(device)
     print(f"   Model: {type(model).__name__}")
 
-    best_model_path = "bestmodel/checkpoint-epoch5.pth"
+    best_model_path = "bestmodel/checkpoint-epoch65.pth"
     print(f"Loading model from: {best_model_path}")
     
     if os.path.exists(best_model_path):

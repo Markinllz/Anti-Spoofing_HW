@@ -13,7 +13,7 @@ defaults:
 inferencer:
   seed: 42
   device: "auto"
-  from_pretrained: "bestmodel/checkpoint-epoch6.pth" 
+  from_pretrained: "bestmodel/checkpoint-epoch65.pth" 
   save_path: "inference_results"
   log_metrics: true
   save_predictions: true
