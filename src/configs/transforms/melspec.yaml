@@ -1,22 +1,17 @@
-# Mel-spectrogram transforms configuration
-# Based on ASVspoof2019 paper recommendations
-
 transforms:
-  # Mel-spectrogram frontend configuration
   melspec:
     sample_rate: 16000
     n_fft: 512
-    hop_length: 160  # 10ms at 16kHz
-    win_length: 320  # 20ms at 16kHz
+    hop_length: 160
+    win_length: 320
     n_mels: 80
     f_min: 0.0
-    f_max: 8000.0  # Half of sample rate
+    f_max: 8000.0
     power: 2.0
     with_emphasis: True
     with_delta: False
     in_db: True
 
-  # Instance transforms configuration
   instance_transforms:
     data_object:
       _target_: src.transforms.stft.MelSpectrogram
@@ -46,4 +41,4 @@ batch_transforms:
       _args_:
         - _target_: src.transforms.normalize.Normalize
           mean: [0.0]
-          std: [1.0] 
+          std: [1.0]

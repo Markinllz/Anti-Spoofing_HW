@@ -5,7 +5,7 @@ train:
   audio_path: ${data_path}/ASVspoof2019_LA_train/flac
   out_path: data/train_index.json
   instance_transforms: ${transforms.instance_transforms}
-  
+
 dev:
   _target_: src.datasets.mydataset.AudioSpoofingDataset
   name: dev
@@ -13,7 +13,7 @@ dev:
   audio_path: ${data_path}/ASVspoof2019_LA_dev/flac
   out_path: data/dev_index.json
   instance_transforms: ${transforms.instance_transforms}
-  
+
 eval:
   _target_: src.datasets.mydataset.AudioSpoofingDataset
   name: eval
@@ -21,4 +21,4 @@ eval:
   audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
   out_path: data/eval_index.json
   instance_transforms: ${transforms.instance_transforms}
-  dataloader: eval  # Use eval dataloader config 
+  dataloader: eval

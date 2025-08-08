@@ -1,5 +1,2 @@
-# Sigmoid Loss configuration
-# Binary Cross Entropy with Sigmoid activation
-
 loss_function:
-  _target_: src.loss.sigmoid_loss.SigmoidLoss 
+  _target_: src.loss.sigmoid_loss.SigmoidLoss

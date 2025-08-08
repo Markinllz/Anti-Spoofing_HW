@@ -1,7 +1,3 @@
-# Loss function configuration
-# Simplified for binary classification with sigmoid
-
 loss_function:
-  # Binary Cross Entropy Loss with sigmoid activation
   bce:
     _target_: src.loss.crossentropy.BCELoss

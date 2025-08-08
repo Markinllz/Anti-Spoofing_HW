@@ -22,7 +22,6 @@ inferencer:
 
 data_path: ${oc.env:DATA_PATH,data}
 
-# Transforms configuration (Mel-spectrogram)
 transforms:
   instance_transforms:
     data_object:
