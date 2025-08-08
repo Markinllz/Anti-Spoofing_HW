@@ -84,7 +84,7 @@ class SubmissionInferencer(Inferencer):
                 # Add zero logit for spoof class: [logit_bonafide, 0]
                 logits_binary = torch.cat([logits_2d, torch.zeros_like(logits_2d)], dim=-1)
                 probs = torch.softmax(logits_binary, dim=-1)
-                bonafide_probs = probs[:, 0]  # Probability of bonafide class
+                bonafide_probs = probs[:, 0, 0]  # Probability of bonafide class (first element of each batch)
                 
                 batch_size = logits.shape[0]
                 
