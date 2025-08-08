@@ -737,11 +737,14 @@ class BaseTrainer:
             total_loss += batch_loss.item() * batch_labels.size(0)  # Weight by batch size
             total_samples += batch_labels.size(0)
             
-            # Apply sigmoid for binary classification with 1 output
-            # Ensure logits are 1D for binary classification
-            if logits.dim() > 1:
-                logits = logits.squeeze(-1)
-            scores = torch.sigmoid(logits)  # Probability of bonafide class
+            # Apply softmax for binary classification to get bonafide probabilities
+            # Ensure logits are 2D for softmax: [batch_size, 1]
+            if logits.dim() == 1:
+                logits = logits.unsqueeze(-1)  # Shape: (batch_size, 1)
+            # Add zero logit for spoof class: [logit_bonafide, 0]
+            logits_binary = torch.cat([logits, torch.zeros_like(logits)], dim=-1)
+            probs = torch.softmax(logits_binary, dim=-1)
+            scores = probs[:, 0]  # Probability of bonafide class
             all_scores.extend(scores.detach().cpu().numpy())
             all_labels_np.extend(batch_labels.detach().cpu().numpy())
         

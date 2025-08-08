@@ -53,8 +53,8 @@ for filename in os.listdir(SOLUTIONS_DIR):
 
         assert len(scores) == len(index), "Not enough / too many scores"
 
-        # Scores are already bonafide probabilities (0-1 range)
-        # No need to apply sigmoid since they're already probabilities
+        # Scores are already bonafide probabilities from softmax (0-1 range)
+        # No need to apply additional transformations since they're already probabilities
         scores_probs = scores
 
         # Compute EER
