@@ -1,8 +1,7 @@
-# LCNN configuration
-# Binary classification with 2 outputs (spoof, bonafide)
+# LCNN configuration (Hydra group: model)
+# IMPORTANT: do not nest under "model:" here; this file content becomes config.model
 
-model:
-  _target_: src.model.model.LCNN
-  in_channels: 1
-  num_classes: 2  # Two outputs: [spoof, bonafide]
-  dropout_rate: 0.75  # According to ASVspoof2019 STC paper
+_target_: src.model.model.LCNN
+in_channels: 1
+num_classes: 2  # Two outputs: [spoof, bonafide]
+dropout_rate: 0.75  # According to ASVspoof2019 STC paper

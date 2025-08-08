@@ -136,8 +136,21 @@ def main(config):
     print(f"   Available dataloaders: {list(dataloaders.keys())}")
 
     print("Creating model...")
-    # Use the same instantiation path as in regular inference for consistency
-    model = instantiate(config.model).to(device)
+    # Try Hydra instantiation first, then fallback to manual
+    try:
+        model_obj = instantiate(config.model)
+    except Exception as e:
+        model_obj = None
+        print(f"Hydra instantiate failed for model: {e}")
+    if hasattr(model_obj, "to"):
+        model = model_obj.to(device)
+    else:
+        from src.model.model import LCNN
+        # Read params safely from config.model
+        in_ch = getattr(config.model, "in_channels", 1)
+        num_classes = getattr(config.model, "num_classes", 2)
+        dr = getattr(config.model, "dropout_rate", 0.75)
+        model = LCNN(in_channels=in_ch, num_classes=num_classes, dropout_rate=dr).to(device)
     print(f"   Model: {type(model).__name__}")
 
     best_model_path = config.inferencer.get("from_pretrained", "bestmodel/model_best.pth")
