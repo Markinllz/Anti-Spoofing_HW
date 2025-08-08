@@ -78,13 +78,10 @@ class SubmissionInferencer(Inferencer):
                 
                 logits = outputs["logits"]
                 # Convert logits to bonafide probabilities using softmax
-                # For binary classification: softmax([logit, 0]) = [prob_bonafide, prob_spoof]
-                # We want prob_bonafide
-                logits_2d = logits.unsqueeze(-1)  # Shape: (batch_size, 1)
-                # Add zero logit for spoof class: [logit_bonafide, 0]
-                logits_binary = torch.cat([logits_2d, torch.zeros_like(logits_2d)], dim=-1)
-                probs = torch.softmax(logits_binary, dim=-1)
-                bonafide_probs = probs[:, 0, 0]  # Probability of bonafide class (first element of each batch)
+                # For binary classification: softmax([logit_spoof, logit_bonafide]) = [prob_spoof, prob_bonafide]
+                # We want prob_bonafide (second output)
+                probs = torch.softmax(logits, dim=-1)
+                bonafide_probs = probs[:, 1]  # Probability of bonafide class (second output)
                 
                 batch_size = logits.shape[0]
                 
@@ -123,8 +120,8 @@ def main(config):
     from src.model.model import LCNN
     model = LCNN(
         in_channels=1,
-        num_classes=1,
-        dropout_rate=0.5
+        num_classes=2,  # 2 outputs for binary classification
+        dropout_rate=0.75  # As in original paper
     ).to(device)
     print(f"   Model: {type(model).__name__}")
 

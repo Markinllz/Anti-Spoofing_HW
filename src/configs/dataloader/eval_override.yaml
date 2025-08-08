@@ -1,0 +1,8 @@
+# Override eval dataloader to not shuffle
+eval:
+  _target_: torch.utils.data.DataLoader
+  batch_size: 16
+  num_workers: 4
+  pin_memory: True
+  shuffle: False  # No shuffle for eval
+  drop_last: False

@@ -11,6 +11,8 @@ defaults:
   - metrics: default
   - writer: cometml
   - datasets: asvspoof2019
+  - dataloader: default
+  - dataloader/eval_override
   - _self_
 
 # Training configuration
@@ -33,7 +35,7 @@ dataloader:
 
 # Model configuration
 model:
-  dropout_rate: 0.5  # Reduced for stability
+  dropout_rate: 0.75  # As in original paper
 
 # Optimizer configuration
 optimizer:

@@ -138,8 +138,8 @@ class LCNN(nn.Module):
         # BatchNorm_31: 80 features
         self.bn_fc = nn.BatchNorm1d(80, affine=False)
         
-        # FC_32: 1 feature for binary classification with sigmoid
-        self.fc2 = nn.Linear(80, 1)
+        # FC_32: 2 features for binary classification (spoof, bonafide)
+        self.fc2 = nn.Linear(80, 2)
         
         # Dropout
         self.dropout = nn.Dropout(dropout_rate)

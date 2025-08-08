@@ -34,13 +34,10 @@ class EERMetric(BaseMetric):
         elif 'logits' in batch:
             logits = batch['logits']
             # For binary classification: apply softmax to get probabilities
-            # Ensure logits are 2D for softmax: [batch_size, 1]
-            if logits.dim() == 1:
-                logits = logits.unsqueeze(-1)  # Shape: (batch_size, 1)
-            # Add zero logit for spoof class: [logit_bonafide, 0]
-            logits_binary = torch.cat([logits, torch.zeros_like(logits)], dim=-1)
-            probs = torch.softmax(logits_binary, dim=-1)
-            scores = probs[:, 0]  # Probability of bonafide class
+            # For binary classification: softmax([logit_spoof, logit_bonafide]) = [prob_spoof, prob_bonafide]
+            # We want prob_bonafide (second output)
+            probs = torch.softmax(logits, dim=-1)
+            scores = probs[:, 1]  # Probability of bonafide class (second output)
         else:
             return 0.0
         

@@ -20,4 +20,5 @@ eval:
   label_path: ${data_path}/ASVspoof2019_LA_cm_protocols/ASVspoof2019.LA.cm.eval.trl.txt
   audio_path: ${data_path}/ASVspoof2019_LA_eval/flac
   out_path: data/eval_index.json
-  instance_transforms: ${transforms.instance_transforms} 
+  instance_transforms: ${transforms.instance_transforms}
+  dataloader: eval  # Use eval dataloader config 
