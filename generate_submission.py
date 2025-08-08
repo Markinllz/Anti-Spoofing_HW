@@ -77,11 +77,14 @@ class SubmissionInferencer(Inferencer):
                 outputs = self.model(batch["data_object"])
                 
                 logits = outputs["logits"]
-                # Convert logits to scores where higher = more likely bonafide
-                # For A-Softmax: apply sigmoid for binary classification with 1 output
-                # Our model: sigmoid(logits) > 0.5 = bonafide, sigmoid(logits) < 0.5 = spoof
-                # For EER: we want higher scores for bonafide, lower for spoof
-                scores = torch.sigmoid(logits.squeeze(-1))  # Probability of bonafide class
+                # Convert logits to bonafide probabilities using softmax
+                # For binary classification: softmax([logit, 0]) = [prob_bonafide, prob_spoof]
+                # We want prob_bonafide
+                logits_2d = logits.unsqueeze(-1)  # Shape: (batch_size, 1)
+                # Add zero logit for spoof class: [logit_bonafide, 0]
+                logits_binary = torch.cat([logits_2d, torch.zeros_like(logits_2d)], dim=-1)
+                probs = torch.softmax(logits_binary, dim=-1)
+                bonafide_probs = probs[:, 0]  # Probability of bonafide class
                 
                 batch_size = logits.shape[0]
                 
@@ -89,8 +92,8 @@ class SubmissionInferencer(Inferencer):
                 keys = eval_trial_ids[trial_id_idx:trial_id_idx + batch_size]
                 trial_id_idx += batch_size
                 
-                for i, (key, score) in enumerate(zip(keys, scores)):
-                    predictions[key] = score.item()
+                for i, (key, prob) in enumerate(zip(keys, bonafide_probs)):
+                    predictions[key] = prob.item()
         
         return predictions
 

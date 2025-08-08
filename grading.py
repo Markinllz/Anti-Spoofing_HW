@@ -1,6 +1,7 @@
 import os
 import csv
 import numpy as np
+import torch
 from copy import deepcopy
 
 from src.metrics.eer import EERMetric
@@ -52,9 +53,13 @@ for filename in os.listdir(SOLUTIONS_DIR):
 
         assert len(scores) == len(index), "Not enough / too many scores"
 
+        # Scores are already bonafide probabilities (0-1 range)
+        # No need to apply sigmoid since they're already probabilities
+        scores_probs = scores
+
         # Compute EER
-        bona_cm = scores[labels == 1]
-        spoof_cm = scores[labels == 0]
+        bona_cm = scores_probs[labels == 1]
+        spoof_cm = scores_probs[labels == 0]
         
         # Use the same EER computation as in training
         eer_metric = EERMetric()
